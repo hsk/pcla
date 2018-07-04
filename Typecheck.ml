@@ -24,38 +24,37 @@ let rec fvT : utype -> int list = function
 
 let rec unify1 : utype * utype -> utype -> utype = function
   | x,y when x = y -> (fun t->t)
+  | VarT(i), t when VarT i = t -> (fun x -> x)
+  | VarT(i), t when List.mem i (fvT t) -> raise(UnificationFailed(VarT i, t))
+  | VarT(i), t -> substType i t
+  | t, VarT i -> unify1 (VarT i, t)
   | ConT(con1, xs), ConT(con2, ys) when con1 = con2 && List.length xs = List.length ys ->
-        let go (x,y) sbt t =
-          unify1 (sbt x, sbt y) (sbt t)
-        in
-        List.fold_right go (List.combine xs ys) (fun t->t)
+    List.fold_right (fun (x,y) sbt t ->
+      unify1 (sbt x, sbt y) (sbt t)
+    ) (List.combine xs ys) (fun t->t)
   | ConT(con1, xs), ConT(con2, ys) -> raise(UnificationFailed(ConT(con1, xs), ConT(con2, ys)))
   | ArrT(x1, x2), ArrT(y1, y2) ->
     let unif2 = unify1 (x2, y2) in
     let unif1 = unify1 (unif2 x1,unif2 y1) in
     (fun t -> unif1 (unif2 t))
-  | VarT(i), t when not(List.mem i (fvT t)) -> substType i t
-  | VarT(i), t when VarT i = t -> (fun x -> x)
-  | VarT(i), t -> raise(UnificationFailed(VarT i, t))
-  | t,VarT i -> unify1 (VarT i, t)
   | x,y -> raise (UnificationFailed(x, y))
 
-let rec unify : (utype * utype) list -> utype -> utype = function
-  | [] -> fun x -> x
-  | (x,y)::qs ->
+let rec unify t s: utype = match s with
+  | [] -> t
+  | (x,y)::s ->
     let f = unify1 (x, y) in
-    let qs' = List.map (fun (x,y) -> (f x, f y)) qs in
-    (fun t -> f (unify qs' t))
+    let s' = List.map (fun (x,y) -> (f x, f y)) s in
+    f (unify t s')
 
 let cnt = ref 0
 let reset () = cnt := 0
 let new_id () = cnt := !cnt + 1; !cnt
 
 let utype_of_type t : utype =
-  let ctx = ref M.empty in
+  let c = ref M.empty in
   let rec f = function
-    | VarT(i) when M.mem i !ctx -> VarT(M.find i !ctx)
-    | VarT(i) -> let n = new_id () in ctx := M.add i n !ctx; VarT n
+    | VarT(i) when M.mem i !c -> VarT(M.find i !c)
+    | VarT(i) -> let n = new_id () in c := M.add i n !c; VarT n
     | Prop -> Prop
     | ArrT(x, y) -> ArrT(f x,f y)
     | ConT(con, xs)-> ConT(con, List.map f xs)
@@ -64,7 +63,7 @@ let utype_of_type t : utype =
 
 type ctx = utype M.t
 let ctx = ref M.empty
-let rec findUnifs env: term * utype -> (utype * utype) list = function
+let rec inferTermType env: term * utype -> (utype * utype) list = function
   | Var v, typ when M.mem v env.types -> [(typ,utype_of_type (M.find v env.types))]
   | Var v, typ when M.mem v !ctx -> [(typ,M.find v !ctx)]
   | Var v, typ -> ctx := M.add v typ !ctx; []
@@ -72,34 +71,35 @@ let rec findUnifs env: term * utype -> (utype * utype) list = function
       let tyt = VarT(new_id()) in
       let tyxs = List.map (fun x -> (x,VarT(new_id()))) xs in
       ctx := List.fold_left (fun ctx (x,t) -> M.add x t ctx) !ctx tyxs;
-      let qs = findUnifs env (t, tyt) in
+      let s = inferTermType env (t, tyt) in
       ctx := List.fold_left (fun ctx x -> M.remove x ctx) !ctx xs;
-      (List.fold_right(fun (_,a) b -> ArrT(a,b)) tyxs tyt,typ)::qs
+      (List.fold_right(fun (_,a) b -> ArrT(a,b)) tyxs tyt,typ)::s
   | App(t, ts), typ ->
       let tyts = List.map (fun t -> (t,VarT(new_id()))) ts in
-      let q = findUnifs env (t, (List.fold_right(fun (_,a) b-> ArrT(a,b)) tyts typ)) in
-      List.fold_left (fun qs (t,u) -> let q = findUnifs env (t,u) in union qs q) q tyts
-
+      let s = inferTermType env (t, (List.fold_right(fun (_,a) b-> ArrT(a,b)) tyts typ)) in
+      List.fold_left (fun s (t,u) -> union s (inferTermType env (t,u))) s tyts
+(*
 let inferTerm env term : utype =
   let typ0 = VarT(new_id()) in
-  let s = findUnifs env (term, typ0) in
-  unify s typ0
+  let s = inferTermType env (term, typ0) in
+  unify typ0 s
+*)
 
 let infer env fml : utype =
   ctx := M.empty;
   let rec go = function
-    | Pred(p, (ts : term list)), typ when M.mem p env.types ->
+    | Pred(p, ts), typ when M.mem p env.types ->
       let ptyp = utype_of_type (M.find p env.types) in
       let tyts = List.map (fun _ -> VarT(new_id())) ts in
       let tstyts = List.combine ts tyts in
-      let qs = List.map (findUnifs env) tstyts in
-      (typ,Prop)::(List.fold_right (fun x y->ArrT(x,y)) tyts typ,ptyp)::unions qs
+      let ss = List.map (inferTermType env) tstyts in
+      (typ,Prop)::(List.fold_right (fun x y->ArrT(x,y)) tyts typ,ptyp)::unions ss
     | Pred(p, ts), typ ->
       let tyts = List.map (fun _ -> VarT(new_id())) ts in
       let tstyts = List.combine ts tyts in
-      let qs = List.map (findUnifs env) tstyts in
+      let ss = List.map (inferTermType env) tstyts in
       ctx := M.add p (List.fold_right (fun x y -> ArrT(x, y)) tyts typ) !ctx;
-      (typ,Prop)::unions (List.rev qs) 
+      (typ,Prop)::unions ss 
     | Top, typ -> [(typ,Prop)]
     | Bottom, typ -> [(typ,Prop)]
     | And(fml1, fml2), typ -> (typ,Prop):: (union (go (fml1, typ)) (go (fml2, typ)))
@@ -109,5 +109,4 @@ let infer env fml : utype =
     | Exist(t, fml), typ -> (typ,Prop)::go (fml, typ)
   in
   let typ0 = VarT(new_id()) in
-  let s = go (fml, typ0) in
-  unify s typ0
+  unify typ0 (go (fml, typ0))
