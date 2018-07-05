@@ -10,7 +10,7 @@ let pDecl : string -> decl = fun str -> Parser.decl Lexer.tokens (Lexing.from_st
 let pCommand : string -> command = fun str -> Parser.command Lexer.tokens (Lexing.from_string str)
 let pFormula : string -> formula = fun str -> Parser.formula Lexer.tokens (Lexing.from_string str)
 let pTerm : string -> term = fun str -> Parser.term Lexer.tokens (Lexing.from_string str)
-let newGoal : formula -> judgement list = fun fml -> [Judgement([], [fml])]
+let newGoal : formula -> judgement list = fun fml -> [Judge([], [fml])]
 
 let readFile f =
   let ic = open_in f in
@@ -29,13 +29,13 @@ let runStateT m env' =
 (*
 type 'y declSuspender
   = DeclAwait of (Decl -> y)
-  | ProofNotFinished of [Judgement] (Command -> y)
+  | ProofNotFinished of [Judg] (Command -> y)
   | RunCommandError of Ident SomeException y
   | DeclError of Ident SomeException y
   deriving (Functor)
 *)
 type declSuspender =
-  | DeclAwait of (decl -> unit -> declSuspender)
+  | DeclAwait of (decl -> declSuspender)
   | ProofNotFinished of judgement list * (command -> declSuspender)
   | RunCommandError of ident
   | DeclError of ident
@@ -45,7 +45,7 @@ let forever : (unit -> declSuspender) -> (unit -> declSuspender) =
   fun f () ->
   let rec g = function
     | DeclReturn -> g (f ())
-    | DeclAwait f -> DeclAwait (fun decl _-> g(f decl ()))
+    | DeclAwait f -> DeclAwait (fun decl -> g(f decl))
     | r -> r
   in
   g (f ())
@@ -82,7 +82,7 @@ let typecheck : formula -> utype -> (unit -> declSuspender) -> declSuspender =
 let rec toplevelM : unit -> declSuspender = fun () -> forever toplevelM1 ()
 and toplevelM1 : unit -> declSuspender =
   fun () ->
-  DeclAwait(fun decl () ->
+  DeclAwait(fun decl ->
   match decl with
     | AxiomD(idx, fml) -> typecheck fml Prop (fun () ->
         env := insertThm idx fml !env;
@@ -115,7 +115,7 @@ and toplevelM1 : unit -> declSuspender =
           | DeclAwait k ->
             begin match ds with
             | [] -> DeclReturn
-            | c::cs' -> go (k c) cs'
+            | c::cs' -> go (fun()->k c) cs'
             end
           | DeclReturn -> DeclReturn
           | DeclError err -> failwith ("declrunner: " ^ err)
@@ -144,12 +144,12 @@ fun idx fml coms ->
           | ComAwait cont ->
               begin match coms with
               | [] -> ProofNotFinished(js', fun com' -> go (fun ()->ComAwait cont) js' [com'])
-              | c::cs -> go (cont c) js' cs
+              | c::cs -> go (fun () -> cont c) js' cs
               end
           | CommandError(idt, (*err cont*) cont) as z -> RunCommandError(idt (*,err (return ()) fun () -> go cont js' coms)*))
       in
       env := { !env with proof = [] };
-      go (commandM !env) (newGoal fml) coms;(* todo: next declsuspender *)
+      go (fun()->commandM !env) (newGoal fml) coms
 
 and claire : env -> decl list -> env = fun env decls ->
   let rec go : (unit -> declSuspender) -> env -> decl list -> env =
@@ -159,7 +159,7 @@ and claire : env -> decl list -> env = fun env decls ->
     | DeclAwait cont ->
       begin match decls with
       | [] -> env'
-      | d::ds -> go (cont d) env' ds 
+      | d::ds -> go (fun()->cont d) env' ds 
       end
     | z -> Printf.printf "%s\n" (showDeclSuspender z); env'
   in

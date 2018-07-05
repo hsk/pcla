@@ -11,12 +11,6 @@ module M = struct
   let fromList ls =
     List.fold_left(fun m (k,v)->M.add k v m) M.empty ls
 end
-(*
-module S = Set.Make (struct
-  type t = string
-  let compare = compare
-end)
-*)
 let show_formula_map thms =
   let es = M.bindings thms in
   String.concat ", " (List.map (fun (x,f) -> Printf.sprintf "%s:%s" x (show_formula f)) es)
@@ -66,19 +60,18 @@ let fp : env -> formula -> S.t =
   | Exist(_, fml) -> go fml
   in go
 *)
-let metagen : env -> formula -> formula =
-  fun env ->
-  let rec go = function
-  | Pred(p, ts) when M.mem p env.types -> Pred(p, ts)
-  | Pred(p, ts) -> Pred("?" ^ p, ts)
-  | Top -> Top
-  | Bottom -> Bottom
-  | And(fml1, fml2) -> And(go fml1, go fml2)
-  | Or(fml1, fml2) -> Or(go fml1, go fml2)
-  | Then(fml1, fml2) -> Then(go fml1, go fml2)
-  | Forall(v, fml) -> Forall(v, go fml)
-  | Exist(v, fml) -> Exist(v, go fml)
-  in go
 
 let insertThm : thmIndex -> formula -> env -> env = 
-  fun idx fml env -> {env with thms = M.add idx (metagen env fml) (env.thms) }
+  fun idx fml env ->
+  let rec metagen : formula -> formula = function
+    | Pred(p, ts) when M.mem p env.types -> Pred(p, ts)
+    | Pred(p, ts) -> Pred("?" ^ p, ts)
+    | Top -> Top
+    | Bottom -> Bottom
+    | And(fml1, fml2) -> And(metagen fml1, metagen fml2)
+    | Or(fml1, fml2) -> Or(metagen fml1, metagen fml2)
+    | Then(fml1, fml2) -> Then(metagen fml1, metagen fml2)
+    | Forall(v, fml) -> Forall(v, metagen fml)
+    | Exist(v, fml) -> Exist(v, metagen fml)
+  in
+  {env with thms = M.add idx (metagen fml) (env.thms) }

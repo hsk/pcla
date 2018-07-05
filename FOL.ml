@@ -15,9 +15,9 @@ type formula =
   | Pred of ident * term list
   | Top
   | Bottom
-  | And of formula * formula (* formula :/\: formula *)
-  | Or of formula * formula (* formula :\/: formula *)
-  | Then of formula * formula (* formula :==>: formula *)
+  | And of formula * formula
+  | Or of formula * formula
+  | Then of formula * formula
   | Forall of ident * formula
   | Exist of ident * formula
 
@@ -30,6 +30,7 @@ let rec show_formula = function
   | Then(f1, f2) -> Printf.sprintf "(%s :==>: %s)" (show_formula f1) (show_formula f2)
   | Forall(x, f) -> Printf.sprintf "Forall(%S,%s)" x (show_formula f)
   | Exist(x, f) -> Printf.sprintf "Exist(%S,%s)" x (show_formula f) 
+let show_formulas fs = String.concat ", " (List.map show_formula fs)
 
 let const c = Pred(c, [])
 let neg a = Then(a, Bottom)
@@ -46,7 +47,6 @@ type 'a typeForm
   | ConT of ident * 'a typeForm list
   | ArrT of 'a typeForm * 'a typeForm 
   | Prop
-(* deriving (Eq, Ord, Show, Functor, Foldable, Traversable) *)
 
 let rec show_tf show_a = function
   | VarT a -> Printf.sprintf "VarT(%S)" (show_a a)
@@ -110,11 +110,8 @@ fun idt pred ->
     | Top -> Top
     | Bottom -> Bottom
     | And(fml1, fml2) -> And(go fml1, go fml2)
-    | Or(fml1, fml2) -> And(go fml1, go fml2)
+    | Or(fml1, fml2) -> Or(go fml1, go fml2)
     | Then(fml1, fml2) -> Then(go fml1, go fml2)
     | Forall(v, fml) -> Forall(v, go fml)
     | Exist(v,fml) -> Exist(v, go fml)
   in go
-
-(*generalize :: Formula -> Formula
-  generalize fml = S.foldl (\f i -> Forall i f) fml (fv fml)*)

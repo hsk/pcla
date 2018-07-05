@@ -26,7 +26,7 @@ fun env ->
     | DeclReturn -> go env' k
     | DeclAwait k ->
       let t = safep (fun ()->printf "decl>%@") pDecl in
-      go env' (k t)
+      go env' (fun()->k t)
     | ProofNotFinished(js, cont) ->
       List.iter (fun j -> Printf.printf "%s\n" (LK.show_judgement j)) js;
       (*
@@ -42,9 +42,7 @@ fun env ->
   in
   go env toplevelM
 
-
 let _ =
-  let xs = Array.to_list Sys.argv in
   if Array.length Sys.argv != 2 then
     begin
       printf "=========================\n";
@@ -55,7 +53,7 @@ let _ =
     end
   else
     begin
-      let str = readFile (List.nth xs 1) in
+      let str = readFile Sys.argv.(1) in
       let Laire ds = pLaire str in
       let env = claire defEnv ds in
       printf "= Constants =\n";

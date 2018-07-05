@@ -30,7 +30,7 @@ let onlyR : int -> int -> rule list =
 let assumption : env -> argument -> judgement list -> command list =
 fun env ArgEmpty js ->
   match js with
-  | Judgement(assms, props)::_ ->
+  | Judge(assms, props)::_ ->
     begin match findIndex (fun a -> List.mem a assms) props with
     | None -> raise (CannotSolve js)
     | Some i ->
@@ -109,7 +109,7 @@ apply (PR 1, WR)
 *)
 let genR : env -> argument -> judgement list -> command list =
   fun env arg js -> match arg,js with
-  | ArgIdents [(i,[])], Judgement(_, (p::_))::_ ->
+  | ArgIdents [(i,[])], Judge(_, (p::_))::_ ->
     [ Apply [Cut(Forall(i, p))];
       NewCommand("defer", ArgEmpty);
       Apply [ForallL(Var i)];
@@ -135,7 +135,7 @@ apply (PL 1, WR)
 *)
 let genL : env -> argument -> judgement list -> command list =
   fun env arg js -> match arg,js with
-  | ArgIdents [(i,[])], Judgement(p::ps,_)::_ -> 
+  | ArgIdents [(i,[])], Judge(p::ps,_)::_ -> 
     [ Apply [Cut(Forall(i, p))];
       Apply [ForallR i];
       NewCommand("assumption", ArgEmpty);
@@ -165,7 +165,7 @@ apply (PR 1, WR, WL)
 
 let absL : env -> argument -> judgement list -> command list =
 fun env arg js -> match arg,js with
-  | ArgEmpty, Judgement(a::_, (b::_))::_ ->
+  | ArgEmpty, Judge(a::_, (b::_))::_ ->
     [ Apply [Cut(Then(a,b))];
       NewCommand("defer", ArgEmpty);
       Apply [ImpL];
