@@ -1,63 +1,48 @@
 open Claire
-open Parser
 open Env
 open Checker
-open Printf
 
-let defEnv = {defEnv with hs=M.fromList [
-  "Commands.ml",(Commands.export_decl,Commands.export_command);
-  "EqCommands.ml",(EqCommands.export_decl,EqCommands.export_command)]
-}
-let rec init = function
-  | [a] -> []
-  | x::xs -> x::init xs
-
-let clairepl : env -> unit =
-fun env ->
-  let rec safep : (unit -> unit) -> (string -> 'a) -> 'a =
-    fun ma p ->
-      ma ();
-      try p(read_line())
-      with err -> (*print (err :: ErrorCall);*)safep ma p
+let clairepl env =
+  let rec safep m p =
+    try Printf.printf "%s%!" m; p(read_line())
+    with err -> Printf.printf "%s\n" (Printexc.to_string err); safep m p
   in
-  let rec go : env -> (unit -> declSuspender) -> unit = fun env k ->
-    let (z,env') = runStateT k env in
-    match z with
-    | DeclReturn -> go env' k
-    | DeclAwait k ->
-      let t = safep (fun ()->printf "decl>%@") pDecl in
-      go env' (fun()->k t)
-    | ProofNotFinished(js, cont) ->
+  let rec go = function
+    | DeclAwait cont,env -> go (cont (safep "decl>" Lexer.pDecl,env))
+    | ProofNotFinished(js, cont),env' ->
       List.iter (fun j -> Printf.printf "%s\n" (LK.show_judgement j)) js;
-      (*
-      let (t,raw) = safep (fun () -> printf "command>%@") (fun s -> let s' = pCommand s in seq s' (s',s)) in
-      go { env' with proof = env'.proof @ [t,raw] } (cont t)
-      *)
-    | RunCommandError idt (*err cont*) ->
-      printf "%s\n" (showDeclSuspender z)
-      (* if env'.proof = [] then go env' cont else go ({env' with proof = init (env'.proof)}) cont *)
-    | DeclError((*idt,*) err (*,cont*)) ->
-      printf "%s\n" err
-      (*;go env cont*)
+      let (t,raw) = safep "command>" (fun s -> let s' = Lexer.pCommand s in (s',s)) in
+      go (cont(t,{ env' with proof = env'.proof @ [t,raw] }))
+    | (RunCommandError(idt, err, cont) as z),env' ->
+      let rec init = function
+        | [a] -> []
+        | x::xs -> x::init xs
+      in
+      Printf.printf "%s\n" (showDeclSuspender z);
+      if env'.proof = [] then go (cont env') else go (cont {env' with proof = init (env'.proof)})
+    | DeclError(idt, err, cont),env' ->
+      Printf.printf "%s: %s\n" idt (Printexc.to_string err);
+      go (cont env)
   in
-  go env toplevelM
+  go (toplevel env)
 
 let _ =
-  if Array.length Sys.argv != 2 then
-    begin
-      printf "=========================\n";
-      printf "=== Welcome to Claire ===\n";
-      printf "=========================\n";
-      printf "\n";
-      clairepl defEnv
-    end
-  else
-    begin
-      let str = readFile Sys.argv.(1) in
-      let Laire ds = pLaire str in
-      let env = claire defEnv ds in
-      printf "= Constants =\n";
-      List.iter (fun(k,v)->printf "(%S,%s)\n" k (FOL.show_type v)) (M.bindings env.types);(* todo *)
-      printf "= Proved Theorems =\n";
-      List.iter (fun(k,v)->printf "(%S,%s)\n" k (FOL.show_formula v)) (M.bindings env.thms);
-    end
+  let env = {Env.defEnv with hs=M.fromList [
+    "Commands.ml",(Commands.export_decl,Commands.export_command);
+    "EqCommands.ml",(EqCommands.export_decl,EqCommands.export_command)]}
+  in
+  if Array.length Sys.argv != 2 then begin
+    Printf.printf "=========================\n";
+    Printf.printf "=== Welcome to Claire ===\n";
+    Printf.printf "=========================\n";
+    Printf.printf "\n";
+    clairepl env
+  end else begin
+    let str = Lexer.readFile Sys.argv.(1) in
+    let Laire ds = Lexer.pLaire str in
+    let env = Checker.claire env ds in
+    Printf.printf "= Constants =\n";
+    List.iter (fun(k,v)->Printf.printf "(%S,%s)\n" k (FOL.show_type v)) (M.bindings env.types);
+    Printf.printf "= Proved Theorems =\n";
+    List.iter (fun(k,v)->Printf.printf "(%S,%s)\n" k (FOL.show_formula v)) (M.bindings env.thms)
+  end

@@ -8,8 +8,7 @@ module M = struct
   end)
   include M
   let keys m = List.map(fun (k,_)->k) (M.bindings m)
-  let fromList ls =
-    List.fold_left(fun m (k,v)->M.add k v m) M.empty ls
+  let fromList ls = List.fold_left(fun m (k,v)->M.add k v m) M.empty ls
 end
 let show_formula_map thms =
   let es = M.bindings thms in
@@ -28,8 +27,7 @@ type env = {
   proof : (command * string) list;
   newcommands : defCommand M.t;
   newdecls : (argument list -> decl list) M.t;
-  hs :
-  ((string * (argument list -> decl list)) list * (string * defCommand) list) M.t;
+  hs : ((string * (argument list -> decl list)) list * (string * defCommand) list) M.t;
 }
 and defCommand = env -> argument -> judgement list -> command list
 
@@ -45,21 +43,6 @@ let defEnv : env = {thms=M.empty;types=M.empty;proof=[];newcommands=M.empty;newd
 let print_proof : env -> string =
 fun env -> Printf.sprintf "= proof of the previous theorem =\nproof\n%s\nqed\n" 
   (String.concat "\n" (List.map (fun (_,x) -> "  " ^ x) (List.filter (function (NoApply _,_)-> false | _ -> true) env.proof)))
-(*
-let fp : env -> formula -> S.t =
-  fun env ->
-  let rec go = function
-  | Pred(p, ts) when M.mem p env.types -> S.empty
-  | Pred(p, ts) -> S.singleton p
-  | Top -> S.empty
-  | Bottom -> S.empty
-  | And(fml1, fml2) -> S.union (go fml1) (go fml2)
-  | Or(fml1, fml2) -> S.union (go fml1) (go fml2)
-  | Then(fml1, fml2) -> S.union (go fml1) (go fml2)
-  | Forall(_, fml) -> go fml
-  | Exist(_, fml) -> go fml
-  in go
-*)
 
 let insertThm : thmIndex -> formula -> env -> env = 
   fun idx fml env ->

@@ -3,14 +3,6 @@ type term =
   | Var of ident
   | Abs of ident list * term
   | App of term * term list
-
-let show_idents xs = String.concat ", " (List.map(Printf.sprintf "%S") xs)
-let rec show_term = function
-  | Var x -> Printf.sprintf "Var(%S)" x
-  | Abs(xs,t) -> Printf.sprintf "Abs([%s],%s)" (show_idents xs) (show_term t)
-  | App(t,ts) -> Printf.sprintf "App(%s,[%s])" (show_term t) (show_terms ts) 
-and show_terms ts = String.concat ", " (List.map show_term ts)
-
 type formula =
   | Pred of ident * term list
   | Top
@@ -20,7 +12,24 @@ type formula =
   | Then of formula * formula
   | Forall of ident * formula
   | Exist of ident * formula
+let const c = Pred(c, [])
+let neg a = Then(a, Bottom)
+type predicate
+  = PredFun of ident list * predicate
+  | PredFml of formula
+type 'a typeForm
+  = VarT of 'a
+  | ConT of ident * 'a typeForm list
+  | ArrT of 'a typeForm * 'a typeForm 
+  | Prop
+type type_ = ident typeForm
 
+let show_idents xs = String.concat ", " (List.map(Printf.sprintf "%S") xs)
+let rec show_term = function
+  | Var x -> Printf.sprintf "Var(%S)" x
+  | Abs(xs,t) -> Printf.sprintf "Abs([%s],%s)" (show_idents xs) (show_term t)
+  | App(t,ts) -> Printf.sprintf "App(%s,[%s])" (show_term t) (show_terms ts) 
+and show_terms ts = String.concat ", " (List.map show_term ts)
 let rec show_formula = function
   | Pred(x,ts) -> Printf.sprintf "Pred(%S,[%s])" x (show_terms ts)
   | Top -> "Top"
@@ -31,33 +40,17 @@ let rec show_formula = function
   | Forall(x, f) -> Printf.sprintf "Forall(%S,%s)" x (show_formula f)
   | Exist(x, f) -> Printf.sprintf "Exist(%S,%s)" x (show_formula f) 
 let show_formulas fs = String.concat ", " (List.map show_formula fs)
-
-let const c = Pred(c, [])
-let neg a = Then(a, Bottom)
-
-type predicate
-  = PredFun of ident list * predicate
-  | PredFml of formula
 let rec show_predicate = function
   | PredFun(xs,p) -> Printf.sprintf "Pred([%s],%s)" (show_idents xs) (show_predicate p)
   | PredFml(f) -> Printf.sprintf "PredFml(%s)" (show_formula f)
 let show_predicates ps = String.concat ", " (List.map show_predicate ps)
-type 'a typeForm
-  = VarT of 'a
-  | ConT of ident * 'a typeForm list
-  | ArrT of 'a typeForm * 'a typeForm 
-  | Prop
-
 let rec show_tf show_a = function
   | VarT a -> Printf.sprintf "VarT(%S)" (show_a a)
   | ConT(x,tfs) -> Printf.sprintf "ConT(%S, [%s])" x (show_tfs show_a tfs) 
   | ArrT(tf1,tf2) -> Printf.sprintf "ArrT(%s, %s)" (show_tf show_a tf1) (show_tf show_a tf2)
   | Prop -> Printf.sprintf "Prop"
 and show_tfs show_a tfs = String.concat ", " (List.map (show_tf show_a) tfs)
-
-type type_ = ident typeForm
-
-let rec show_type = show_tf (fun x->x)
+let show_type = show_tf (fun x->x)
 
 let substType : 'a -> 'a typeForm -> 'a typeForm -> 'a typeForm =
 fun x t' ->

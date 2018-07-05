@@ -2,19 +2,15 @@ open Claire
 open FOL
 open Env
 
+type utype = int typeForm
+exception UnificationFailed of (utype * utype)
+exception NotFound of (ident * env)
+
 let rec union a = function
   | [] -> a
   | (b::bs) when List.mem b a -> union a bs
   | (b::bs) -> union (a@[b]) bs
 let unions a = List.fold_left union [] a
-
-type utype = int typeForm
-let rec show_utype = show_tf (fun x->string_of_int x)
-let show_utypepair (t1,t2) = Printf.sprintf "(%s,%s)" (show_utype t1) (show_utype t2)
-let show_utypepairs ts = String.concat "," (List.map show_utypepair ts)
-
-exception UnificationFailed of (utype * utype) (* deriving (Show) *)
-exception NotFound of (ident * env) (* deriving (Show) *)
 
 let cnt = ref 0
 let reset () = cnt := 0
@@ -71,23 +67,22 @@ let rec inferTerm env s = function
 
 let infer env fml : utype =
   ctx := M.empty;
-  let fold env s =
-    List.fold_left (fun (p,s) e ->
-      let t,s = inferTerm env s e in ArrT(t,p),s
-    ) (Prop,s)
-  in
   let rec go env s = function
     | Top | Bottom -> s
     | Forall(t, fml) | Exist(t, fml) -> go env s fml
     | And(fml1, fml2) | Or(fml1, fml2) | Then(fml1, fml2) ->
       go env (go env s fml1) fml2
     | Pred(p, es) when M.mem p env ->
-      let t,s = fold env s es in
+      let t,s = List.fold_left (fun (p,s) e ->
+        let t,s = inferTerm env s e in ArrT(t,p),s
+      ) (Prop,s) es in
       unify s (t,instantiate (M.find p env))
     | Pred(p, es) ->
-      let t,s = fold env s es in
+      let t,s = List.fold_left (fun (p,s) e ->
+        let t,s = inferTerm env s e in ArrT(t,p),s
+      ) (Prop,s) es in
       ctx := M.add p t !ctx;
       s
   in
-  let s = go env.types [] fml in
+  let _ = go env.types [] fml in
   Prop

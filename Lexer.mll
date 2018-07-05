@@ -1,11 +1,7 @@
-{
-  open Parser
-}
-
+{ open Parser }
 let digit = ['0'-'9']
 let alpha = ['a'-'z' 'A'-'Z']
 let white = [' ' '\t' '\n' '\r']
-
 rule tokens = parse
   | white+          { tokens lexbuf }
   | "#"[^'\n' '\r']*{ tokens lexbuf }
@@ -77,3 +73,21 @@ rule tokens = parse
   | "'" alpha (alpha | digit | '_')*   as s  { TVAR s }
   | alpha (alpha | digit | ['_' '\''])* as s { IDENT s }
   | eof             { EOF }
+{
+open FOL
+open LK
+open Claire
+let pLaire : string -> laire = fun str -> Parser.laire tokens (Lexing.from_string str)
+let pDecl : string -> decl = fun str -> Parser.decl tokens (Lexing.from_string str)
+let pCommand : string -> command = fun str -> Parser.command tokens (Lexing.from_string str)
+let pFormula : string -> formula = fun str -> Parser.formula tokens (Lexing.from_string str)
+let pTerm : string -> term = fun str -> Parser.term tokens (Lexing.from_string str)
+
+let readFile f =
+  let ic = open_in f in
+  let n = in_channel_length ic in
+  let s = String.create n in
+  really_input ic s 0 n;
+  close_in ic;
+  s
+}

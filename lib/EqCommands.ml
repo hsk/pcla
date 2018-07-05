@@ -2,7 +2,7 @@ open FOL
 open LK
 open Claire
 open Env
-open Checker
+open Lexer
 
 exception WrongArgument of argument
 
