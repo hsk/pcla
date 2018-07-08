@@ -15,7 +15,7 @@ print_proof(Env,S) :-
   format(atom(S),'= proof of the previous theorem =\nproof\n~w\nqed\n',[Pr3]).
 print_proof1((noApply(_),_)) :- fail,!.
 print_proof1(_).
-print_proof2((_,X),X_) :- format(atom(X_),'  ~w',X).
+print_proof2(X,X_) :- format(atom(X_),'  ~w',X).
 
 metagen(E,pred(P,Es),pred(P,Es)) :- member(P=_,E).
 metagen(_,pred(P,Es),pred(P_,Es)) :- format(atom(P_),'?~w',[P]).

@@ -9,7 +9,7 @@ pairs(IPs) :- maplist(pair,IPs).
 ipairs((I,IPs)) :- ident(I),pairs(IPs).
 argument([]).
 argument(p(Ps)) :- maplist(predicate,Ps).
-argument(argTerms(Es)) :- maplist(term,Es).
+argument(t(Es)) :- maplist(term,Es).
 argument(n(I:T)) :- ident(I),type(T).
 argument(i(IIPs)) :- maplist(ipairs,IIPs).
 command(apply(Rs)) :- maplist(rule,Rs).

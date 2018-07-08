@@ -48,7 +48,7 @@ inferTerm(Env,abs(Xs, E),T,S,S_) :-
   bb_get(ctx,Ctx2),foldl([X,Ctx3,Ctx3_]>>select(X=_,Ctx3,Ctx3_),Xs,Ctx2,Ctx2_),bb_put(ctx,Ctx2_),
   new_id(Id),T=varT(Id),
   foldr([_=T3,T21,(T3->T21)]>>!,XTs,T2,T2_),unify((T2_,T),S1,S_).
-inferTerm(Env,app(E, Es),T,S,S5) :-
+inferTerm(Env,E$Es,T,S,S5) :-
   inferTerm(Env,E,T1,S,S1),!,
   foldr([E2,(Ts2,S2),([T2|Ts2],S3)]>>inferTerm(Env,E2,T2,S2,S3),Es,([],S1),(Ts,S4)),
   new_id(Id),T=varT(Id),foldr([A,B,(A->B)]>>!,Ts,T,T2),unify((T1,T2),S4,S5).

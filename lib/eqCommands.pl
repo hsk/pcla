@@ -4,19 +4,15 @@
 :- use_module(claire).
 :- use_module(env).
 
-refl(_,_,_,_).
-/*
-let refl : env -> argument -> judgement list -> command list =
-  fun env arg js -> match arg with
-  | ArgTerms [t] -> 
-    [ Apply [Cut(pFormula "Forall r. eq(r,r)")];
-      Use("refl", ["eq", PredFun(["x"], PredFml(pFormula "eq(x,x)"))]);
-      Apply [ForallR "r"];
-      NewCommand("assumption", ArgEmpty);
-      Apply [ForallL t];
-      NewCommand("assumption", ArgEmpty);
-    ]
-  | arg -> raise (WrongArgument arg)
-*/
+refl(_,t(T),_,[
+  apply([cut(forall(r,pred(eq,[var(r),var(r)])))]),
+  use(refl, [eq: predFun([x], predFml(pred(eq,[var(x),var(x)])))]),
+  apply([forallR(r)]),
+  newCommand(assumption, []),
+  apply([forallL(T)]),
+  newCommand(assumption, [])
+]).
+refl(_,Arg,_,_) :- throw(wrongArgument(Arg)).
+
 export_command([refl]).
 export_decl([]).
