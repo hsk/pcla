@@ -25,8 +25,8 @@ judge([impR|R],[A⊦[(F1==>F2)|P]|J],J_) :- judge(R,[[F1|A]⊦[F2|P]|J],J_).
 judge([bottomL|R],[[bottom|_]⊦_|J],J_) :- judge(R,J,J_).
 judge([topR|R],[_⊦[top|_]|J],J_) :- judge(R,J,J_).
 judge([forallL(T)|R],[[forall(X,F)|A]⊦P|J],J_) :- substFormula(X,T,F,F_),judge(R,[[F_|A]⊦P|J],J_).
-judge([forallR(Y)|R],[A⊦[forall(X,F)|P]|J],J_) :- substFormula(X,var(Y),F,F_),judge(R,[A⊦[F_|P]|J],J_).
-judge([existL(Y)|R],[[exist(X,F)|A]⊦P|J],J_) :- substFormula(X,var(Y),F,F_),judge(R,[[F_|A]⊦P|J],J_).
+judge([forallR(Y)|R],[A⊦[forall(X,F)|P]|J],J_) :- substFormula(X,!Y,F,F_),judge(R,[A⊦[F_|P]|J],J_).
+judge([existL(Y)|R],[[exist(X,F)|A]⊦P|J],J_) :- substFormula(X,!Y,F,F_),judge(R,[[F_|A]⊦P|J],J_).
 judge([existR(T)|R],[A⊦[exist(X,F)|P]|J],J_) :- substFormula(X,T,F,F_),judge(R,[A⊦[F_|P]|J],J_).
 judge([wL|R],[[_|A]⊦P|J],J_) :- judge(R,[A⊦P|J],J_).
 judge([wR|R],[A⊦[_|P]|J],J_) :- judge(R,[A⊦P|J],J_).

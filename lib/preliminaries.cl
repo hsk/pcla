@@ -1,15 +1,15 @@
 plFile('lib/commands').
 constant(eq,varT(a)->varT(a)->prop).
-axiom(refl, pred(eq,[var(r),var(r)])).
-axiom(subst, pred(eq,[var(a),var(b)]) ==> pred('P',[var(a)]) ==> pred('P',[var(b)])).
-theorem(sym, pred(eq,[var(r),var(s)]) ==> pred(eq,[var(s),var(r)]),proof([
+axiom(refl, pred(eq,[!r,!r])).
+axiom(subst, pred(eq,[!a,!b]) ==> pred('P',[!a]) ==> pred('P',[!b])).
+theorem(sym, pred(eq,[!r,!s]) ==> pred(eq,[!s,!r]),proof([
   apply([impR]),
-  apply([cut(forall(a,forall(b, pred(eq,[var(a),var(b)]) ==> pred(eq,[var(a),var(a)]) ==> pred(eq,[var(b),var(a)]))))]),
+  apply([cut(forall(a,forall(b, pred(eq,[!a,!b]) ==> pred(eq,[!a,!a]) ==> pred(eq,[!b,!a]))))]),
   use(subst),
   apply([forallR(a), forallR(b)]),
-  inst('P', predFun([x],predFml(pred(eq,[var(x),var(a)])))),
+  inst('P', predFun([x],predFml(pred(eq,[!x,!a])))),
   newCommand(assumption,[]),
-  apply([forallL(var(r)), forallL(var(s))]),
+  apply([forallL(!r), forallL(!s)]),
   apply([impL]),
   newCommand(assumption,[]),
   apply([impL]),
@@ -18,15 +18,15 @@ theorem(sym, pred(eq,[var(r),var(s)]) ==> pred(eq,[var(s),var(r)]),proof([
   newCommand(assumption,[])
 ])).
 
-theorem(trans, pred(eq,[var(r),var(s)]) ==> pred(eq,[var(s),var(t)]) ==> pred(eq,[var(r),var(t)]),
+theorem(trans, pred(eq,[!r,!s]) ==> pred(eq,[!s,!t]) ==> pred(eq,[!r,!t]),
 proof([
   apply([impR, impR]),
-  apply([cut(forall(a,forall(b,pred(eq,[var(a),var(b)]) ==> pred(eq,[var(r),var(a)]) ==> pred(eq,[var(r),var(b)]))))]),
+  apply([cut(forall(a,forall(b,pred(eq,[!a,!b]) ==> pred(eq,[!r,!a]) ==> pred(eq,[!r,!b]))))]),
   use(subst),
-  inst('P', predFun([x],predFml(pred(eq,[var(r),var(x)])))),
+  inst('P', predFun([x],predFml(pred(eq,[!r,!x])))),
   apply([forallR(a), forallR(b)]),
   newCommand(assumption,[]),
-  apply([forallL(var(s)), forallL(var(t))]),
+  apply([forallL(!s), forallL(!t)]),
   apply([impL]),
   newCommand(assumption,[]),
   apply([impL]),

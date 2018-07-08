@@ -38,9 +38,9 @@ inst(conT(Cn,[]),conT(Cn,[]),C,C).
 inst(conT(Cn,[X|Xs]),conT(Cn,[X_|Xs_])) --> inst(X,X_),inst(conT(Cn,Xs),conT(Cn,Xs_)).
 
 %inferTerm(_,E,_,_,_) :- writeln(inferTerm(E)),fail.
-inferTerm(Env,var(V),T_,S,S) :- member(V=T,Env),!,instantiate(T,T_).
-inferTerm(_,var(V),T,S,S) :- bb_get(ctx,Ctx),member(V=T,Ctx).
-inferTerm(_,var(V),T,S,S) :- new_id(I),T = varT(I),bb_update(ctx,Ctx,[V=T|Ctx]).
+inferTerm(Env,!V,T_,S,S) :- member(V=T,Env),!,instantiate(T,T_).
+inferTerm(_,!V,T,S,S) :- bb_get(ctx,Ctx),member(V=T,Ctx).
+inferTerm(_,!V,T,S,S) :- new_id(I),T = varT(I),bb_update(ctx,Ctx,[V=T|Ctx]).
 inferTerm(Env,abs(Xs, E),T,S,S_) :-
   maplist([X1,(X1=varT(Id1))]>>new_id(Id1),Xs,XTs),
   bb_get(ctx,Ctx),foldl([(X=T),Ctx1,[(X=T)|Ctx1]]>>!,XTs,Ctx,Ctx_),bb_put(ctx,Ctx_),
