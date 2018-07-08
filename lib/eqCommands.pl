@@ -1,11 +1,11 @@
-open FOL
-open LK
-open Claire
-open Env
-open Lexer
+:- module('lib/eqCommands',[]).
+:- use_module(fol).
+:- use_module(lk).
+:- use_module(claire).
+:- use_module(env).
 
-exception WrongArgument of argument
-
+refl(_,_,_,_).
+/*
 let refl : env -> argument -> judgement list -> command list =
   fun env arg js -> match arg with
   | ArgTerms [t] -> 
@@ -17,6 +17,6 @@ let refl : env -> argument -> judgement list -> command list =
       NewCommand("assumption", ArgEmpty);
     ]
   | arg -> raise (WrongArgument arg)
-
-let export_command = [ "refl", refl ]
-let export_decl    = []
+*/
+export_command([refl]).
+export_decl([]).

@@ -1,64 +1,57 @@
-Ml_file "Commands.ml"
+plFile('lib/commands').
+constant(eq,varT(a)->varT(a)->prop).
+axiom(refl, pred(eq,[var(r),var(r)])).
+axiom(subst, pred(eq,[var(a),var(b)]) ==> pred('P',[var(a)]) ==> pred('P',[var(b)])).
+theorem(sym, pred(eq,[var(r),var(s)]) ==> pred(eq,[var(s),var(r)]),proof([
+  apply([impR]),
+  apply([cut(forall(a,forall(b, pred(eq,[var(a),var(b)]) ==> pred(eq,[var(a),var(a)]) ==> pred(eq,[var(b),var(a)]))))]),
+  use(subst),
+  apply([forallR(a), forallR(b)]),
+  inst('P', predFun([x],predFml(pred(eq,[var(x),var(a)])))),
+  newCommand(assumption,[]),
+  apply([forallL(var(r)), forallL(var(s))]),
+  apply([impL]),
+  newCommand(assumption,[]),
+  apply([impL]),
+  use(refl),
+  newCommand(assumption,[]),
+  newCommand(assumption,[])
+])).
 
-# equality
-constant eq: 'a => 'a => prop
+theorem(trans, pred(eq,[var(r),var(s)]) ==> pred(eq,[var(s),var(t)]) ==> pred(eq,[var(r),var(t)]),
+proof([
+  apply([impR, impR]),
+  apply([cut(forall(a,forall(b,pred(eq,[var(a),var(b)]) ==> pred(eq,[var(r),var(a)]) ==> pred(eq,[var(r),var(b)]))))]),
+  use(subst),
+  inst('P', predFun([x],predFml(pred(eq,[var(r),var(x)])))),
+  apply([forallR(a), forallR(b)]),
+  newCommand(assumption,[]),
+  apply([forallL(var(s)), forallL(var(t))]),
+  apply([impL]),
+  newCommand(assumption,[]),
+  apply([impL]),
+  newCommand(assumption,[]),
+  newCommand(assumption,[])
+])).
+plFile('lib/eqCommands').
 
-axiom refl: eq(r,r)
-axiom subst: eq(a,b) ==> P(a) ==> P(b)
+%%%%%%%%
 
-theorem sym: eq(r,s) ==> eq(s,r)
-proof
-  apply ImpR
-  apply Cut [Forall a. Forall b. eq(a,b) ==> eq(a,a) ==> eq(b,a)]
-  use subst
-  apply (ForallR a, ForallR b)
-  inst P [x => eq(x,a)]
-  assumption
-  apply (ForallL [r], ForallL [s])
-  apply ImpL
-  assumption
-  apply ImpL
-  use refl
-  assumption
-  assumption
-qed
+theorem('Curry',
+  (pred('P',[]) ==> pred('Q',[]) ==> pred('R',[])) ==> (and(pred('P',[]), pred('Q',[])) ==> pred('R',[])),
+proof([
+  apply([impR, impR, pL(1), impL, andL1]),
+  newCommand(assumption,[]),
+  newCommand(implyR,[]),
+  apply([andL2]),
+  newCommand(assumption,[])
+])).
 
-theorem trans: eq(r,s) ==> eq(s,t) ==> eq(r,t)
-proof
-  apply (ImpR, ImpR)
-  apply Cut [Forall a. Forall b. eq(a,b) ==> eq(r,a) ==> eq(r,b)]
-  use subst
-  inst P [x => eq(r,x)]
-  apply (ForallR a, ForallR b)
-  assumption
-  apply (ForallL [s], ForallL [t])
-  apply ImpL
-  assumption
-  apply ImpL
-  assumption
-  assumption
-qed
-
-Ml_file "EqCommands.ml"
-
-
-########
-
-theorem Curry: (P ==> Q ==> R) ==> (P /\ Q ==> R)
-proof
-  apply (ImpR, ImpR, PL 1, ImpL, AndL1)
-  assumption
-  implyR
-  apply (AndL2)
-  assumption
-qed
-
-theorem Uncurry: (P /\ Q ==> R) ==> (P ==> Q ==> R)
-proof
-  apply (ImpR, ImpR, ImpR, PL 2)
-  implyR
-  apply (AndR)
-  assumption
-  assumption
-qed
-
+theorem('Uncurry', (and(pred('P',[]), pred('Q',[])) ==> pred('R',[])) ==> (pred('P',[]) ==> pred('Q',[]) ==> pred('R',[])),
+proof([
+  apply([impR, impR, impR, pL(2)]),
+  newCommand(implyR,[]),
+  apply([andR]),
+  newCommand(assumption,[]),
+  newCommand(assumption,[])
+])).
