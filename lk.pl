@@ -5,21 +5,18 @@
 :- use_module(fol).
 judgement(Fs1 ⊦ Fs2) :- maplist(formula,Fs1),maplist(formula,Fs2).
 assmIndex(I) :- string(I).
-rule(i).
-rule(cut(F)) :- formula(F).
+rule(i). rule(cut(F)) :- formula(F).
 rule(andL1). rule(andL2). rule(andR).
 rule(orL). rule(orR1). rule(orR2).
-rule(impL). rule(impR).
-rule(bottomL). rule(topR).
+rule(impL). rule(impR). rule(bottomL). rule(topR).
 rule(forallL(T)) :- term(T). rule(forallR(I)) :- ident(I).
 rule(existL(I)) :- ident(I). rule(existR(T)) :- term(T).
-rule(wL). rule(wR).
-rule(cL). rule(cR).
+rule(wL). rule(wR). rule(cL). rule(cR).
 rule(pL(I)) :- integer(I). rule(pR(I)) :- integer(I).
 
 %judge(Rs,Js,_) :- writeln(judge(Rs;Js)),fail.
-judge([i|R],[(A⊦A)|J],J_) :- judge(R,J,J_).
-judge([cut(F)|R],[(A⊦P)|J],J_) :- judge(R,[(A⊦[F|P]),([F|A]⊦P)|J],J_).
+judge([i|R],[A⊦A|J],J_) :- judge(R,J,J_).
+judge([cut(F)|R],[A⊦P|J],J_) :- judge(R,[(A⊦[F|P]),([F|A]⊦P)|J],J_).
 judge([andL1|R],[([and(F,_)|A]⊦P)|J],J_) :- judge(R,[([F|A]⊦P)|J],J_).
 judge([andL2|R],[([and(_,F)|A]⊦P)|J],J_) :- judge(R,[([F|A]⊦P)|J],J_).
 judge([andR|R],[(A⊦[and(F1,F2)|P])|J],J_) :- judge(R,[(A⊦[F1|P]),(A⊦[F2|P])|J],J_).
