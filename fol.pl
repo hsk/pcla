@@ -7,7 +7,7 @@
 ]).
 ident(S) :- atom(S).
 term(!I) :- ident(I).
-term(abs(Is,E)) :- maplist(ident,Is),term(E).
+term(fun(Is,E)) :- maplist(ident,Is),term(E).
 term(E$Es) :- term(E),maplist(term,Es).
 
 formula(pred(I,Es)) :- ident(I),maplist(term,Es).
@@ -40,8 +40,8 @@ substType(_,_,prop,prop).
 
 substTerm(I,T_,!I,T_).
 substTerm(_,_,!I,!I).
-substTerm(I,_,abs(Is,E),abs(Is,E)) :- member(I,Is),!.
-substTerm(I,T_,abs(Is,E),abs(Is,E_)) :- substTerm(I,T_,E,E_).
+substTerm(I,_,fun(Is,E),fun(Is,E)) :- member(I,Is),!.
+substTerm(I,T_,fun(Is,E),fun(Is,E_)) :- substTerm(I,T_,E,E_).
 substTerm(I,T_,E1$E2,E1_$E2_) :- maplist(substTerm(I,T_),[E1|E2],[E1_|E2_]).
 
 substFormula(I,T_,pred(P,Es),pred(P,Es_)) :- maplist(substTerm(I,T_),Es,Es_).
