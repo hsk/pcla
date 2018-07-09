@@ -1,13 +1,13 @@
 plFile('lib/commands').
 constant(eq,varT(a)->varT(a)->prop).
-axiom(refl, pred(eq,[!r,!r])).
-axiom(subst, pred(eq,[!a,!b]) ==> pred('P',[!a]) ==> pred('P',[!b])).
-theorem(sym, pred(eq,[!r,!s]) ==> pred(eq,[!s,!r]),proof([
+axiom(refl, eq*[!r,!r]).
+axiom(subst, eq*[!a,!b] ==> 'P'*[!a] ==> 'P'*[!b]).
+theorem(sym, eq*[!r,!s] ==> eq*[!s,!r],proof([
   apply([impR]),
-  apply([cut(forall(a,forall(b, pred(eq,[!a,!b]) ==> pred(eq,[!a,!a]) ==> pred(eq,[!b,!a]))))]),
+  apply([cut(forall(a,forall(b, eq*[!a,!b] ==> eq*[!a,!a] ==> eq*[!b,!a])))]),
   use(subst),
   apply([forallR(a), forallR(b)]),
-  inst('P', predFun([x],predFml(pred(eq,[!x,!a])))),
+  inst('P', predFun([x],predFml(eq*[!x,!a]))),
   newCommand(assumption,[]),
   apply([forallL(!r), forallL(!s)]),
   apply([impL]),
@@ -18,12 +18,12 @@ theorem(sym, pred(eq,[!r,!s]) ==> pred(eq,[!s,!r]),proof([
   newCommand(assumption,[])
 ])).
 
-theorem(trans, pred(eq,[!r,!s]) ==> pred(eq,[!s,!t]) ==> pred(eq,[!r,!t]),
+theorem(trans, eq*[!r,!s] ==> eq*[!s,!t] ==> eq*[!r,!t],
 proof([
   apply([impR, impR]),
-  apply([cut(forall(a,forall(b,pred(eq,[!a,!b]) ==> pred(eq,[!r,!a]) ==> pred(eq,[!r,!b]))))]),
+  apply([cut(forall(a,forall(b,eq*[!a,!b] ==> eq*[!r,!a] ==> eq*[!r,!b])))]),
   use(subst),
-  inst('P', predFun([x],predFml(pred(eq,[!r,!x])))),
+  inst('P', predFun([x],predFml(eq*[!r,!x]))),
   apply([forallR(a), forallR(b)]),
   newCommand(assumption,[]),
   apply([forallL(!s), forallL(!t)]),
@@ -38,7 +38,7 @@ plFile('lib/eqCommands').
 %%%%%%%%
 
 theorem('Curry',
-  (pred('P',[]) ==> pred('Q',[]) ==> pred('R',[])) ==> (and(pred('P',[]), pred('Q',[])) ==> pred('R',[])),
+  ('P'*[] ==> 'Q'*[] ==> 'R'*[]) ==> (and('P'*[], 'Q'*[]) ==> 'R'*[]),
 proof([
   apply([impR, impR, pL(1), impL, andL1]),
   newCommand(assumption,[]),
@@ -47,7 +47,7 @@ proof([
   newCommand(assumption,[])
 ])).
 
-theorem('Uncurry', (and(pred('P',[]), pred('Q',[])) ==> pred('R',[])) ==> (pred('P',[]) ==> pred('Q',[]) ==> pred('R',[])),
+theorem('Uncurry', (and('P'*[], 'Q'*[]) ==> 'R'*[]) ==> ('P'*[] ==> 'Q'*[] ==> 'R'*[]),
 proof([
   apply([impR, impR, impR, pL(2)]),
   newCommand(implyR,[]),

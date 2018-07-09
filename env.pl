@@ -17,8 +17,8 @@ print_proof1((noApply(_),_)) :- fail,!.
 print_proof1(_).
 print_proof2(X,X_) :- format(atom(X_),'  ~w',X).
 
-metagen(E,pred(P,Es),pred(P,Es)) :- member(P=_,E).
-metagen(_,pred(P,Es),pred(P_,Es)) :- format(atom(P_),'?~w',[P]).
+metagen(E,P*Es,P*Es) :- member(P=_,E).
+metagen(_,P*Es,P_*Es) :- format(atom(P_),'?~w',[P]).
 metagen(_,top,top).
 metagen(_,bottom,bottom).
 metagen(E,and(F1,F2),and(F1_,F2_)) :- metagen(E,F1,F1_),metagen(E,F2,F2_).

@@ -41,7 +41,7 @@ inst(conT(Cn,[X|Xs]),conT(Cn,[X_|Xs_])) --> inst(X,X_),inst(conT(Cn,Xs),conT(Cn,
 inferTerm(Env,!V,T_,S,S) :- member(V=T,Env),!,instantiate(T,T_).
 inferTerm(_,!V,T,S,S) :- bb_get(ctx,Ctx),member(V=T,Ctx).
 inferTerm(_,!V,T,S,S) :- new_id(I),T = varT(I),bb_update(ctx,Ctx,[V=T|Ctx]).
-inferTerm(Env,fun(Xs, E),T,S,S_) :-
+inferTerm(Env,fun Xs->E,T,S,S_) :-
   maplist([X1,(X1=varT(Id1))]>>new_id(Id1),Xs,XTs),
   bb_get(ctx,Ctx),foldl([(X=T),Ctx1,[(X=T)|Ctx1]]>>!,XTs,Ctx,Ctx_),bb_put(ctx,Ctx_),
   inferTerm(Env,E,T2,S,S1),
@@ -62,11 +62,11 @@ infer1(Env,forall(_,F)) --> infer1(Env,F).
 infer1(Env,exist(_,F)) --> infer1(Env,F).
 infer1(Env,and(F1,F2)) --> infer1(Env,F1),infer1(Env,F2).
 infer1(Env,or(F1,F2)) --> infer1(Env,F1),infer1(Env,F2).
-infer1(Env,(F1==>F2)) --> infer1(Env,F1),infer1(Env,F2).
-infer1(Env,pred(P,Es),S,S_) :-
+infer1(Env,F1==>F2) --> infer1(Env,F1),infer1(Env,F2).
+infer1(Env,P*Es,S,S_) :-
   member(P=T1,Env),!,instantiate(T1,T1_),!,
   foldl([E,(P1,S2),((T2->P1),S2_)]>>inferTerm(Env,E,T2,S2,S2_),Es,(prop,S),(T,S1)),!,
   unify((T,T1_),S1,S_).
-infer1(Env,pred(P,Es),S,S1) :- !,
+infer1(Env,P*Es,S,S1) :- !,
   foldl([E,(P1,S2),((T2->P1),S2_)]>>inferTerm(Env,E,T2,S2,S2_),Es,(prop,S),(T,S1)),!,
   bb_update(ctx,Ctx,[P=T|Ctx]).

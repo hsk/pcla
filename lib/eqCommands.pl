@@ -5,8 +5,8 @@
 :- use_module(env).
 
 refl(_,t(T),_,[
-  apply([cut(forall(r,pred(eq,[!r,!r])))]),
-  use(refl, [eq: predFun([x], predFml(pred(eq,[!x,!x])))]),
+  apply([cut(forall(r,eq*[!r,!r]))]),
+  use(refl, [eq: predFun([x], predFml(eq*[!x,!x]))]),
   apply([forallR(r)]),
   newCommand(assumption, []),
   apply([forallL(T)]),

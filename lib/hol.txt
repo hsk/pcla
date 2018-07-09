@@ -11,26 +11,26 @@ eqt=(varT(a)->varT(a)->conT(bool,[]))
 imp=(conT(bool,[])->conT(bool,[])->conT(bool,[]))
 eq=(varT(a)->varT(a)->prop)
 = Proved Theorems =
-eqssubst=pred(eq,[!eqt$[!t,!s],!true])==>pred(?P,[!s])==>pred(?P,[!t])
-eqsym=pred(eq,[!eqt$[!s,!t],!true])==>pred(eq,[!eqt$[!t,!s],!true])
-True_or_False=pred(eq,[!or$[!eqt$[!P,!true],!eqt$[!P,!false]],!true])
-iff=pred(eq,[!imp$[!imp$[!P,!Q],!imp$[!imp$[!Q,!P],!eqt$[!P,!Q]]],!true])
-mp=pred(eq,[!imp$[!P,!Q],!true])==>pred(eq,[!P,!true])==>pred(eq,[!Q,!true])
-impI=(pred(eq,[!eqt$[!P,!true],!true])==>pred(eq,[!eqt$[!Q,!true],!true]))==>pred(eq,[!imp$[!P,!Q],!true])
-eqext=forall(x,pred(eq,[!eqt$[!f$[!x],!g$[!x]],!true]))==>pred(eq,[!eqt$[fun([x],!f$[!x]),fun([x],!g$[!x])],!true])
-eqsubst=pred(eq,[!eqt$[!s,!t],!true])==>pred(?P,[!s])==>pred(?P,[!t])
-eqrefl=pred(eq,[!eqt$[!t,!t],!true])
-iff_def=pred(eq,[!iff$[!P,!Q],!eqt$[!P,!Q]])
-or_def=pred(eq,[!or$[!P,!Q],!all$[fun([R],!imp$[!imp$[!P,!R],!imp$[!imp$[!Q,!R],!R]])]])
-and_def=pred(eq,[!and$[!P,!Q],!all$[fun([R],!imp$[!imp$[!P,!imp$[!Q,!R]],!R])]])
-not_def=pred(eq,[!not$[!P],!imp$[!P,!false]])
-false_def=pred(eq,[!false,!all$[fun([P],!P)]])
-ex_def=pred(eq,[!ex$[!P],!all$[fun([Q],!imp$[!all$[fun([x],!imp$[!P$[!x],!Q])],!Q])]])
-all_def=pred(eq,[!all$[!P],!eqt$[!P,fun([x],!true)]])
-true_def=pred(eq,[!true,!eqt$[fun([x],!x),fun([x],!x)]])
-Uncurry=(and(pred(?P,[]),pred(?Q,[]))==>pred(?R,[]))==>pred(?P,[])==>pred(?Q,[])==>pred(?R,[])
-Curry=(pred(?P,[])==>pred(?Q,[])==>pred(?R,[]))==>and(pred(?P,[]),pred(?Q,[]))==>pred(?R,[])
-trans=pred(eq,[!r,!s])==>pred(eq,[!s,!t])==>pred(eq,[!r,!t])
-sym=pred(eq,[!r,!s])==>pred(eq,[!s,!r])
-subst=pred(eq,[!a,!b])==>pred(?P,[!a])==>pred(?P,[!b])
-refl=pred(eq,[!r,!r])
+eqssubst=eq*[!eqt$[!t,!s],!true]==> ?P*[!s]==> ?P*[!t]
+eqsym=eq*[!eqt$[!s,!t],!true]==>eq*[!eqt$[!t,!s],!true]
+True_or_False=eq*[!or$[!eqt$[!P,!true],!eqt$[!P,!false]],!true]
+iff=eq*[!imp$[!imp$[!P,!Q],!imp$[!imp$[!Q,!P],!eqt$[!P,!Q]]],!true]
+mp=eq*[!imp$[!P,!Q],!true]==>eq*[!P,!true]==>eq*[!Q,!true]
+impI=(eq*[!eqt$[!P,!true],!true]==>eq*[!eqt$[!Q,!true],!true])==>eq*[!imp$[!P,!Q],!true]
+eqext=forall(x,eq*[!eqt$[!f$[!x],!g$[!x]],!true])==>eq*[!eqt$[(fun[x]->!f$[!x]),(fun[x]->!g$[!x])],!true]
+eqsubst=eq*[!eqt$[!s,!t],!true]==> ?P*[!s]==> ?P*[!t]
+eqrefl=eq*[!eqt$[!t,!t],!true]
+iff_def=eq*[!iff$[!P,!Q],!eqt$[!P,!Q]]
+or_def=eq*[!or$[!P,!Q],!all$[(fun[R]->!imp$[!imp$[!P,!R],!imp$[!imp$[!Q,!R],!R]])]]
+and_def=eq*[!and$[!P,!Q],!all$[(fun[R]->!imp$[!imp$[!P,!imp$[!Q,!R]],!R])]]
+not_def=eq*[!not$[!P],!imp$[!P,!false]]
+false_def=eq*[!false,!all$[(fun[P]->!P)]]
+ex_def=eq*[!ex$[!P],!all$[(fun[Q]->!imp$[!all$[(fun[x]->!imp$[!P$[!x],!Q])],!Q])]]
+all_def=eq*[!all$[!P],!eqt$[!P,(fun[x]->!true)]]
+true_def=eq*[!true,!eqt$[(fun[x]->!x),(fun[x]->!x)]]
+Uncurry=(and(?P*[],?Q*[])==> ?R*[])==> ?P*[]==> ?Q*[]==> ?R*[]
+Curry=(?P*[]==> ?Q*[]==> ?R*[])==>and(?P*[],?Q*[])==> ?R*[]
+trans=eq*[!r,!s]==>eq*[!s,!t]==>eq*[!r,!t]
+sym=eq*[!r,!s]==>eq*[!s,!r]
+subst=eq*[!a,!b]==> ?P*[!a]==> ?P*[!b]
+refl=eq*[!r,!r]
