@@ -1,16 +1,12 @@
 :- module('lib/eqCommands',[]).
-:- use_module(fol).
-:- use_module(lk).
-:- use_module(claire).
-:- use_module(env).
 
 refl(_,t(T),_,[
-  apply([cut(forall(r,eq*[!r,!r]))]),
-  use(refl, [eq: predFun([x], predFml(eq*[!x,!x]))]),
+  apply([cut(forall(r,eq*[*r,*r]))]),
+  use(refl, [eq: predFun([x], predFml(eq*[*x,*x]))]),
   apply([forallR(r)]),
-  newCommand(assumption, []),
+  com(assumption, []),
   apply([forallL(T)]),
-  newCommand(assumption, [])
+  com(assumption, [])
 ]).
 refl(_,Arg,_,_) :- throw(wrongArgument(Arg)).
 
