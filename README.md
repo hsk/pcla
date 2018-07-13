@@ -113,7 +113,7 @@ SICSTus Prologの機能であるブラックボード(`bb_get/2`,`bb_put/3`)でP
     sbterm(T,X,predFml(F),predFml(F_)) :- substFormula(T,X,F,F_).
 
 Prologは `=../2` を使って複合項を分離できるので分離して`or`,`and`,`==>`をまとめて処理しています。
-betaってなに? todo
+<!-- betaってなに? todo -->
 
 ## コマンド実行
 
@@ -122,12 +122,12 @@ betaってなに? todo
     comRun((G,J_),[C|Cs], J) :- !,com(C,G,J_,R),comRun(R,Cs,J).
     comRun(E,          _, _) :- throw(E).
 
-comRun/3はコマンドを実行する述語です。
+`comRun/3`はコマンドを実行する述語です。
 `ruleRun/3` と同様に判断リストJがなくなるかコマンドリストCがなくなるまで `com/4` を実行しエラーがあったら例外を投げます。
 
-com/4は1回に1つだけ実行します。
+`com/4`は1つだけコマンドを実行します。
 実行後処理の継続を返します。コマンドと環境と判断列から判断列と環境を返します。
-proofRun、comRunから呼び出されます。
+`comRun/3`,`proofRun/3`から呼び出されます。
 
     com(apply(Rs)    ,G,J,R) :- !,rule(Rs,J,J_),!,(is_list(J_),R=(G,J_)
                                 ;R=comError(apply,J_,J)).
@@ -169,9 +169,10 @@ proofRun、comRunから呼び出されます。
     declRun(G, [D|Ds],R) :- is_list(G),decl(D,G,R1),!,declRun(R1,Ds,R).
     declRun(E,      D,_) :- writeln('decl error':E;D),halt(1).
 
-declRun/3は環境と宣言リストを受取り環境を返します。
+`declRun/3`は`ruleRun/4`, `comRun/3`と同様に宣言リストから宣言を１つ取り出して`decl/3`を呼び出しなくなるまで実行します。
 宣言が空、あるいはエラーなら終了しますが宣言があれば次の宣言を実行します。
-１つ１つの宣言を実行するのがdecl/3で宣言と環境を受取り環境またはエラーを返します。
+
+`decl/3`は宣言の１つを処理します:
 
     decl(import(Path),    G,R) :- !,read_file_to_terms(Path,Ds,[]),
                                   !,declRun(G,Ds,R),!.
@@ -199,17 +200,17 @@ declRun/3は環境と宣言リストを受取り環境を返します。
 
 importは他のclファイルを読み込みます。
 constantは定数宣言でtypesに名前とそれに対応する型を追加します。
-axiomは公理で、型推論inferを呼び出しその後、insertThmで環境に公理を保存します。公理は証明が必要ない命題です。
-theoremは定理で、公理と同様に型推論を行いますが証明が必要なのでproofRunを実行します。proofRunには正常終了時に行う処理を渡しています。
+axiomは公理の宣言で、型推論`infer/2`を呼び出しその後、`insertThm/2`で環境に公理を保存します。公理は証明が必要ない命題なので証明はありません。
+theoremは定理の宣言で、公理と同様に型推論`infer/2`を呼び、`insertThm/2`で環境に定理を保存します。定理は証明が必要なので`comRun/3`と同様にコマンドを処理する`proofRun/4`を実行します。`proofRun/4`は正常終了時に行う処理を渡します。
 plFileはPrologのファイルを読み込む命令です。プラグインとしてuse_moduleを用いて読み込み、環境に組み込みます。
-newDeclはユーザーが定義した宣言をdeclRunを用いて実行します。
+newDeclはユーザーが定義した宣言を`declRun/3`を用いて実行します。
 
     proofRun((G,[]),    _,N,R) :- !,call(N,G,R),!.
     proofRun((_,J),    [],_,R) :- !,R=proofNotFinished(J).
     proofRun((G,J),[C|Cs],N,R) :- !,com(C,G,J,R1),!,proofRun(R1,Cs,N,R).
     proofRun(Err,       _,_,R) :- !,R=Err.
 
-proofRunは証明を実行するためのコマンドを実行します。comRun/3に似ていますが、動作が異なります。
+`proofRun/4` は証明を実行するためのコマンドを実行します。 `comRun/3` に似ていますが、動作が異なります。
 判断がなくなれば終了コマンド`N/2`を実行し、
 判断は残っているのにコマンドがなくなった場合は証明終わっていないことを返します。
 エラーが帰ってきた場合はエラーをそのまま返却します。
@@ -226,17 +227,15 @@ proofRunは証明を実行するためのコマンドを実行します。comRun
     metagen(E,forall(V,F),forall(V,F_)) :- metagen(E,F,F_).
     metagen(E, exist(V,F), exist(V,F_)) :- metagen(E,F,F_).
 
-insertThm/4 は定理を環境に保存するのですがその際は環境にない述語をmetagenを用いて述語の名前に?を付けます。
-
+`insertThm/4` は定理を環境に保存するのですがその際は環境にない述語を`metagen/3`を用いて述語の名前に`?`を付けます。
 
 ## 型検査 infer
 
 型検査機は通常のラムダ計算に、論理式を扱えるように拡張したものです。
 
-    % typing
     newVarT(varT(C1)) :- bb_get(cnt,C),C1 is C + 1,bb_put(cnt,C1).
 
-newVarT/1はグローバルな変数を使ってユニークな型変数を返します。
+`newVarT/1`はグローバルな変数を使ってユニークな型変数を返します。
 
     infer(G,F) :- bb_put(ctx,[]),member(types=Types,G),infer1(Types,F,[],_).
     infer1(G,P*Es,S,S_) :- member(P=T1,G),!,instantiate(T1,T1_),!,
@@ -249,7 +248,7 @@ newVarT/1はグローバルな変数を使ってユニークな型変数を返�
     infer1(_,_,S,S).
     infer2(G,E,(P1,S2),((T2->P1),S2_)):-inferTerm(G,E,T2,S2,S2_).
 
-論理式の型は決まっているのでただトラバースするだけです。 -->を用いている箇所はDCGの記法を用いています。
+論理式の型は決まっているのでただトラバースするだけです。 `-->/2`を用いている箇所はDCGの記法を用いています。
 
     %inferTerm(_,E,_,_,_) :- writeln(inferTerm(E)),fail.
     inferTerm(G,*V,T_,S,S) :- member(V=T,G),!,instantiate(T,T_).
@@ -296,7 +295,9 @@ newVarT/1はグローバルな変数を使ってユニークな型変数を返�
     occurs(_,_,_).
     occurs(I,T) :- occurs(T,I,T),!.
 
-unifyは型と型が同じであるという方程式を生成します。同じ型ならなにもしませんが、型変数と他の型があれば、その型の中身に型変数が出現しないかoccurs/3で確認してから方程式に追加します。
+`unify/4`は型と型が同じであるという方程式を生成します。同じ型ならなにもしませんが、型変数と他の型があれば、その型の中身に型変数が出現しないか`occurs/3`で確認してから方程式に追加します。
+
+以上でメインプログラム `pcla.pl` を全て見ました。
 
 ## ユーザー定義宣言
 
