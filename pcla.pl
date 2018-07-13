@@ -9,6 +9,97 @@ main :- current_prolog_flag(argv,[File|_]),read_file_to_terms(File,Ds,[]),!,
    writeln('= Constants ='),maplist(writeln,G.types),
    writeln('= Proved Theorems ='),maplist(writeln,G.thms).
 
+% rule
+%ruleRun(Rs,Js,_) :- writeln(ruleRun(Rs;Js)),fail.
+ruleRun([],J,J).
+ruleRun([R1|R],J,J_) :- rule(R1,J,J1),ruleRun(R,J1,J_).
+ruleRun([R|_],J,_) :- cannotApply(R,J).
+rule(i,[A⊦A|J],J).
+rule(cut(F),[A⊦P|J],[A⊦[F|P],[F|A]⊦P|J]).
+rule(andL1,[[and(F,_)|A]⊦P|J],[[F|A]⊦P|J]).
+rule(andL2,[[and(_,F)|A]⊦P|J],[[F|A]⊦P|J]).
+rule(andR,[A⊦[and(F1,F2)|P]|J],[A⊦[F1|P],A⊦[F2|P]|J]).
+rule(orL,[[or(F1,F2)|A]⊦P|J],[[F1|A]⊦P,[F2|A]⊦P|J]).
+rule(orR1,[A⊦[or(F,_)|P]|J],[A⊦[F|P]|J]).
+rule(orR2,[A⊦[or(_,F)|P]|J],[A⊦[F|P]|J]).
+rule(impL,[[F1==>F2|A]⊦P|J],[A⊦[F1|P],[F2|A]⊦P|J]).
+rule(impR,[A⊦[F1==>F2|P]|J],[[F1|A]⊦[F2|P]|J]).
+rule(bottomL,[[bottom|_]⊦_|J],J).
+rule(topR,[_⊦[top|_]|J],J).
+rule(forallL(T),[[forall(X,F)|A]⊦P|J],[[F_|A]⊦P|J]) :- substFormula(X,T,F,F_).
+rule(forallR(Y),[A⊦[forall(X,F)|P]|J],[A⊦[F_|P]|J]) :- substFormula(X,*Y,F,F_).
+rule(existL(Y),[[exist(X,F)|A]⊦P|J],[[F_|A]⊦P|J]) :- substFormula(X,*Y,F,F_).
+rule(existR(T),[A⊦[exist(X,F)|P]|J],[A⊦[F_|P]|J]) :- substFormula(X,T,F,F_).
+rule(wL,[[_|A]⊦P|J],[A⊦P|J]).
+rule(wR,[A⊦[_|P]|J],[A⊦P|J]).
+rule(cL,[[F|A]⊦P|J],[[F,F|A]⊦P|J]).
+rule(cR,[A⊦[F|P]|J],[A⊦[F,F|P]|J]).
+rule(pL(K),[A⊦P|J],[[Ak|K_]⊦P|J]) :- length(A,L),K<L,nth0(K,A,Ak,K_).
+rule(pR(K),[A⊦P|J],[A⊦[Pk|P_]|J]) :- length(P,L),K<L,nth0(K,P,Pk,P_).
+
+substTerm(I,T,*I,T) :- !.
+substTerm(I,T,fun Is->E,fun Is->E_) :- \+member(I,Is),!,substTerm(I,T,E,E_).
+substTerm(I,T,E1$E2,E1_$E2_) :- !,maplist(substTerm(I,T),[E1|E2],[E1_|E2_]).
+substTerm(_,_,T,T).
+
+substFormula(I,T,P*Es,P*Es_) :- !,maplist(substTerm(I,T),Es,Es_).
+substFormula(I,T,forall(X,F),forall(X,F_)) :- !,substFormula(I,T,F,F_).
+substFormula(I,T,exist(X,F),exist(X,F_)) :- !,substFormula(I,T,F,F_).
+substFormula(I,T,F,F_) :- F=..[Op,F1,F2],!,maplist(substFormula(I,T),[F1,F2],Fs),F_=..[Op|Fs].
+substFormula(_,_,F,F).
+
+substPred(I,P,I*Ts,F_) :- !,beta(Ts,P,F_).
+substPred(I,P,forall(V,F),forall(V,F_)) :- !,substPred(I,P,F,F_).
+substPred(I,P,exist(V,F),exist(V,F_)) :- !,substPred(I,P,F,F_).
+substPred(I,P,F,F_) :- F=..[Op,F1,F2],!,maplist(substPred(I,P),[F1,F2],Fs),F_=..[Op|Fs].
+substPred(_,_,Pred,Pred) :- !.
+beta(Xs,predFun([],P),F_) :- beta(Xs,P,F_).
+beta([],predFun(Z,P),_) :- throw(argumentsNotFullyApplied(predFun(Z,P))).
+beta([X|Xs],predFun([T|Ts],F),F_) :- sbterm(T,X,F,F1),beta(Xs,predFun(Ts,F1),F_).
+beta([],predFml(F),F).
+beta(Xs,predFml(F)) :- throw(cannotApplyToFormula(Xs,F)).
+sbterm(T,X,predFun(Ys,F),predFun(Ys,F_)) :- sbterm(T,X,F,F_).
+sbterm(T,X,predFml(F),predFml(F_)) :- substFormula(T,X,F,F_).
+
+% command
+
+comRun((_,[]),     _,[]).
+comRun((_,J),     [], J).
+comRun((G,J_),[C|Cs], J) :- !,com(C,G,J_,R),comRun(R,Cs,J).
+comRun(E,          _, _) :- throw(E).
+proofRun((G,[]),    _,N,R) :- !,call(N,G,R),!.
+proofRun((_,J),    [],_,R) :- !,R=proofNotFinished(J).
+proofRun((G,J),[C|Cs],N,R) :- !,com(C,G,J,R1),!,proofRun(R1,Cs,N,R).
+proofRun(Err,       _,_,R) :- !,R=Err.
+com(apply(Rs)    ,G,J,R) :- ruleRun(Rs,J,J_),is_list(J_),!,R=(G,J_).
+com(apply(Rs)    ,_,J,R) :- ruleRun(Rs,J,E),!,R=comError(apply,E,J).
+com(noApply(R1)  ,G,J,R) :- ruleRun([R1],J,J_),is_list(J_),!,R=(G,J).
+com(noApply(R1)  ,_,J,R) :- ruleRun([R1],J,E),!,R=comError(noapply,E,J).
+com(use(I)       ,G,J,R) :- !,com(use(I, []),G,J,R).
+com(use(I,Pairs) ,G,J,R) :- member(I=F,G.thms),
+                            !,catch({
+                              foldl([Idt:Pred,F1,Insts1]>>(
+                                format(atom(Idt1),'?~w',[Idt]),substPred(Idt1,Pred,F1,Insts1)
+                              ),Pairs,F,Insts),!,
+                              [(Assms⊦Props)|J_]=J,!,R=(G,[[Insts|Assms]⊦Props|J_])
+                            },Err,{R=comError(use,cannotUse(I,Pairs,Err),J)}).
+com(use(I,_)     ,_,J,R) :- !,R=comError(use, noSuchTheorem(I),J).
+com(inst(I,Pred), G,J,R) :- J=[[Assm|Assms]⊦Props|J_],
+                            !,catch({
+                              format(atom(I1),'?~w',[I]),substPred(I1,Pred,Assm,Assm_),
+                              R=(G,[[Assm_|Assms]⊦Props|J_])
+                            },Err,{R=comError(inst, cannotInstantiate(Err),J)}).
+com(inst(_,_)    ,_,J,R) :- !,R=comError(inst,'empty judgement',J).
+com(com(defer,[]),G,J,R) :- !,J=[J1|J_],append(J_,[J1],J_2),R=(G,J_2).
+com(com(Com,Args),G,J,R) :- member(Com=Cmd,G.coms),
+                            !,catch({
+                              call(Cmd,G,Args,J,Cs),!,comRun((G,J),Cs,J_),!,R=(G,J_)
+                            },E,{
+                              E=comError(_,Err,_)->R=comError(Com,Err,J);
+                              true               ->R=comError(Com,E,J)
+                            }).
+com(com(Com,_)   ,_,J,R) :- R=comError(Com, noSuchCom(Com),J).
+
 % decl
 %decl(D,_,_) :- writeln(decl(D)),fail.
 declRun(G,     [],G) :- is_dict(G).
@@ -44,93 +135,7 @@ metagen(E,F1==>F2,F1_==>F2_) :- metagen(E,F1,F1_),metagen(E,F2,F2_).
 metagen(E,forall(V,F),forall(V,F_)) :- metagen(E,F,F_).
 metagen(E,exist(V,F),exist(V,F_)) :- metagen(E,F,F_).
 
-% command
-proofRun((G,[]),    _,N,R) :- !,call(N,G,R),!.
-proofRun((_,J),    [],_,R) :- !,R=proofNotFinished(J).
-proofRun((G,J),[C|Cs],N,R) :- !,com(C,G,J,R1),!,proofRun(R1,Cs,N,R).
-proofRun(Err,       _,_,R) :- !,R=Err.
-comRun((_,[]),     _,[]).
-comRun((_,J),     [], J).
-comRun((G,J_),[C|Cs], J) :- !,com(C,G,J_,R),comRun(R,Cs,J).
-comRun(E,          _, _) :- throw(E).
-com(apply(Rs)    ,G,J,R) :- !,judge(Rs,J,J_),!,(is_list(J_),R=(G,J_);R=comError(apply,J_,J)).
-com(noApply(R1)  ,G,J,R) :- !,judge([R1],J,J_),!,(is_list(J_),R=(G,J);R=comError(noapply,J_,J)).
-com(use(I)       ,G,J,R) :- !,com(use(I, []),G,J,R).
-com(use(I,Pairs) ,G,J,R) :- member(I=F,G.thms),
-                            !,catch({
-                              foldl([Idt:Pred,F1,Insts1]>>(
-                                format(atom(Idt1),'?~w',[Idt]),substPred(Idt1,Pred,F1,Insts1)
-                              ),Pairs,F,Insts),!,
-                              [(Assms⊦Props)|J_]=J,!,R=(G,[[Insts|Assms]⊦Props|J_])
-                            },Err,{R=comError(use,cannotUse(I,Pairs,Err),J)}).
-com(use(I,_)     ,_,J,R) :- !,R=comError(use, noSuchTheorem(I),J).
-com(inst(I,Pred), G,J,R) :- J=[[Assm|Assms]⊦Props|J_],
-                            !,catch({
-                              format(atom(I1),'?~w',[I]),substPred(I1,Pred,Assm,Assm_),
-                              R=(G,[[Assm_|Assms]⊦Props|J_])
-                            },Err,{R=comError(inst, cannotInstantiate(Err),J)}).
-com(inst(_,_)    ,_,J,R) :- !,R=comError(inst,'empty judgement',J).
-com(com(defer,[]),G,J,R) :- !,J=[J1|J_],append(J_,[J1],J_2),R=(G,J_2).
-com(com(Com,Args),G,J,R) :- member(Com=Cmd,G.coms),
-                            !,catch({
-                              call(Cmd,G,Args,J,Cs),!,comRun((G,J),Cs,J_),!,R=(G,J_)
-                            },E,{
-                              E=comError(_,Err,_)->R=comError(Com,Err,J);
-                              true               ->R=comError(Com,E,J)
-                            }).
-com(com(Com,_)   ,_,J,R) :- R=comError(Com, noSuchCom(Com),J).
 
-% judge
-%judge(Rs,Js,_) :- writeln(judge(Rs;Js)),fail.
-judge([i|R],[A⊦A|J],J_) :- judge(R,J,J_).
-judge([cut(F)|R],[A⊦P|J],J_) :- judge(R,[A⊦[F|P],[F|A]⊦P|J],J_).
-judge([andL1|R],[[and(F,_)|A]⊦P|J],J_) :- judge(R,[[F|A]⊦P|J],J_).
-judge([andL2|R],[[and(_,F)|A]⊦P|J],J_) :- judge(R,[[F|A]⊦P|J],J_).
-judge([andR|R],[A⊦[and(F1,F2)|P]|J],J_) :- judge(R,[A⊦[F1|P],A⊦[F2|P]|J],J_).
-judge([orL|R],[[or(F1,F2)|A]⊦P|J],J_) :- judge(R,[[F1|A]⊦P,[F2|A]⊦P|J],J_).
-judge([orR1|R],[A⊦[or(F,_)|P]|J],J_) :- judge(R,[A⊦[F|P]|J],J_).
-judge([orR2|R],[A⊦[or(_,F)|P]|J],J_) :- judge(R,[A⊦[F|P]|J],J_).
-judge([impL|R],[[F1==>F2|A]⊦P|J],J_) :- judge(R,[A⊦[F1|P],[F2|A]⊦P|J],J_).
-judge([impR|R],[A⊦[F1==>F2|P]|J],J_) :- judge(R,[[F1|A]⊦[F2|P]|J],J_).
-judge([bottomL|R],[[bottom|_]⊦_|J],J_) :- judge(R,J,J_).
-judge([topR|R],[_⊦[top|_]|J],J_) :- judge(R,J,J_).
-judge([forallL(T)|R],[[forall(X,F)|A]⊦P|J],J_) :- substFormula(X,T,F,F_),judge(R,[[F_|A]⊦P|J],J_).
-judge([forallR(Y)|R],[A⊦[forall(X,F)|P]|J],J_) :- substFormula(X,*Y,F,F_),judge(R,[A⊦[F_|P]|J],J_).
-judge([existL(Y)|R],[[exist(X,F)|A]⊦P|J],J_) :- substFormula(X,*Y,F,F_),judge(R,[[F_|A]⊦P|J],J_).
-judge([existR(T)|R],[A⊦[exist(X,F)|P]|J],J_) :- substFormula(X,T,F,F_),judge(R,[A⊦[F_|P]|J],J_).
-judge([wL|R],[[_|A]⊦P|J],J_) :- judge(R,[A⊦P|J],J_).
-judge([wR|R],[A⊦[_|P]|J],J_) :- judge(R,[A⊦P|J],J_).
-judge([cL|R],[[F|A]⊦P|J],J_) :- judge(R,[[F,F|A]⊦P|J],J_).
-judge([cR|R],[A⊦[F|P]|J],J_) :- judge(R,[A⊦[F,F|P]|J],J_).
-judge([pL(K)|R],[A⊦P|J],J_) :- length(A,L),K<L,nth0(K,A,Ak,K_),judge(R,[[Ak|K_]⊦P|J],J_).
-judge([pR(K)|R],[A⊦P|J],J_) :- length(P,L),K<L,nth0(K,P,Pk,P_),judge(R,[A⊦[Pk|P_]|J],J_).
-judge([],J,J) :- !.
-judge([R|_],J,_) :- cannotApply(R,J).
-
-% subst
-substPred(I,P,I*Ts,F_) :- !,beta(Ts,P,F_).
-substPred(I,P,forall(V,F),forall(V,F_)) :- !,substPred(I,P,F,F_).
-substPred(I,P,exist(V,F),exist(V,F_)) :- !,substPred(I,P,F,F_).
-substPred(I,P,F,F_) :- F=..[Op,F1,F2],!,maplist(substPred(I,P),[F1,F2],Fs),F_=..[Op|Fs].
-substPred(_,_,Pred,Pred) :- !.
-beta(Xs,predFun([],P),F_) :- beta(Xs,P,F_).
-beta([],predFun(Z,P),_) :- throw(argumentsNotFullyApplied(predFun(Z,P))).
-beta([],predFml(F),F).
-beta([X|Xs],predFun([T|Ts],F),F_) :- sbterm(T,X,F,F1),beta(Xs,predFun(Ts,F1),F_).
-beta(Xs,predFml(F)) :- throw(cannotApplyToFormula(Xs,F)).
-sbterm(T,X,predFun(Ys,F),predFun(Ys,F_)) :- sbterm(T,X,F,F_).
-sbterm(T,X,predFml(F),predFml(F_)) :- substFormula(T,X,F,F_).
-
-substFormula(I,T,P*Es,P*Es_) :- !,maplist(substTerm(I,T),Es,Es_).
-substFormula(I,T,forall(X,F),forall(X,F_)) :- !,substFormula(I,T,F,F_).
-substFormula(I,T,exist(X,F),exist(X,F_)) :- !,substFormula(I,T,F,F_).
-substFormula(I,T,F,F_) :- F=..[Op,F1,F2],!,maplist(substFormula(I,T),[F1,F2],Fs),F_=..[Op|Fs].
-substFormula(_,_,F,F).
-
-substTerm(I,T,*I,T) :- !.
-substTerm(I,T,fun Is->E,fun Is->E_) :- \+member(I,Is),!,substTerm(I,T,E,E_).
-substTerm(I,T,E1$E2,E1_$E2_) :- !,maplist(substTerm(I,T),[E1|E2],[E1_|E2_]).
-substTerm(_,_,T,T).
 
 % typing
 newVarT(varT(C1)) :- bb_get(cnt,C),C1 is C + 1,bb_put(cnt,C1).

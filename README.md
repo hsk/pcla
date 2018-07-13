@@ -4,17 +4,17 @@
 
 処理系が小さい理由は以下のとおりです:
 
-- リファクタリングに小さくした
-- パーサはPrologのものを使用しているためパーサしません
-- 動的型システムなので型指定がない
-- 構文検査器は別プログラム
-- １行に複数命令ある
-- 論理型言語の単一化を用いた
-- 演算子を用いて短縮
-- 外部ライブラリは別ソース
+- リファクタリングして小さく
 - Prologで書いた
+    - 論理型言語の単一化を用いた
+    - 構文検査器は別プログラム
+    - 動的型システムなので型指定がない
+    - パーサはPrologのものを使用
+    - １行に複数命令記述
+    - 演算子を用いて短縮
+- 外部ライブラリは別ソース
 
-プログラムの中身は大雑把に構文検査、メインプログラム、宣言実行、コマンド実行、判断実行、置換処理、型検査から出来ています。
+プログラムの中身は大雑把に構文検査、メインプログラム、宣言適用、コマンド適用、規則適用、置換処理、型検査から出来ています。
 また、外部ライブラリ `lib/*.pl` と定理証明言語のライブラリ `lib/*.cl` があります。
 
 ## 構文検査 syntax_check.pl
@@ -41,7 +41,127 @@ SICSTus Prologの機能であるブラックボード(`bb_get/2`,`bb_put/3`)でP
             writeln('= Constants ='),member(types=Types,G),maplist(writeln,Types),
             writeln('= Proved Theorems ='),member(thms=Thms,G),maplist(writeln,Thms).
 
-メインの処理はファイルを読み込んで、宣言の並びを実行し、結果の環境中の型と定理を表示します。
+メインの処理はファイルを読み込んで、宣言の並びを `declRun/3` で実行し、結果の環境中の型と定理を表示します。
+`declRun/3` の中身は、複雑ですが大きく分けると、
+
+## 規則適用
+
+規則の処理はruleRun/3で行います。個々の規則に対する処理はrule/3で行います。
+
+    % rule
+    ruleRun([],J,J).
+    ruleRun([R1|R],J,J_) :- rule(R1,J,J1),ruleRun(R,J1,J_).
+    ruleRun([R1|_],J,_) :- cannotApply(R1,J).
+    rule(i,[A⊦A|J],J).
+    rule(cut(F),[A⊦P|J],[A⊦[F|P],[F|A]⊦P|J]).
+    rule(andL1,[[and(F,_)|A]⊦P|J],[[F|A]⊦P|J]).
+    rule(andL2,[[and(_,F)|A]⊦P|J],[[F|A]⊦P|J]).
+    rule(andR,[A⊦[and(F1,F2)|P]|J],[A⊦[F1|P],A⊦[F2|P]|J]).
+    rule(orL,[[or(F1,F2)|A]⊦P|J],[[F1|A]⊦P,[F2|A]⊦P|J]).
+    rule(orR1,[A⊦[or(F,_)|P]|J],[A⊦[F|P]|J]).
+    rule(orR2,[A⊦[or(_,F)|P]|J],[A⊦[F|P]|J]).
+    rule(impL,[[F1==>F2|A]⊦P|J],[A⊦[F1|P],[F2|A]⊦P|J]).
+    rule(impR,[A⊦[F1==>F2|P]|J],[[F1|A]⊦[F2|P]|J]).
+    rule(bottomL,[[bottom|_]⊦_|J],J).
+    rule(topR,[_⊦[top|_]|J],J).
+    rule(forallL(T),[[forall(X,F)|A]⊦P|J],[[F_|A]⊦P|J]) :- substFormula(X,T,F,F_).
+    rule(forallR(Y),[A⊦[forall(X,F)|P]|J],[A⊦[F_|P]|J]) :- substFormula(X,*Y,F,F_).
+    rule(existL(Y),[[exist(X,F)|A]⊦P|J],[[F_|A]⊦P|J]) :- substFormula(X,*Y,F,F_).
+    rule(existR(T),[A⊦[exist(X,F)|P]|J],[A⊦[F_|P]|J]) :- substFormula(X,T,F,F_).
+    rule(wL,[[_|A]⊦P|J],[A⊦P|J]).
+    rule(wR,[A⊦[_|P]|J],[A⊦P|J]).
+    rule(cL,[[F|A]⊦P|J],[[F,F|A]⊦P|J]).
+    rule(cR,[A⊦[F|P]|J],[A⊦[F,F|P]|J]).
+    rule(pL(K),[A⊦P|J],[[Ak|K_]⊦P|J]) :- length(A,L),K<L,nth0(K,A,Ak,K_).
+    rule(pR(K),[A⊦P|J],[A⊦[Pk|P_]|J]) :- length(P,L),K<L,nth0(K,P,Pk,P_).
+
+この処理は末尾再帰最適化された規則リストと判断リストのRC状態マシンです。
+規則リストと判断リストを受取り規則に基づいて判断リストを書き換えます。
+規則がなくなるか、エラーになるまで動き続け、判断リストまたはエラーを返します。
+
+## 置換
+
+ラムダ項,論理式,述語の置換処理があり、それぞれ `substTerm/4`,`substFormula/4`,`substPred/4`が対応しています。
+`rule/3` で `substFormula/4` を用いており、 `substPred/4` は `com/4` で用います。
+
+    % subst
+    substTerm(I,T,*I,T) :- !.
+    substTerm(I,T,fun Is->E,fun Is->E_) :- \+member(I,Is),!,substTerm(I,T,E,E_).
+    substTerm(I,T,E1$E2,E1_$E2_) :- !,maplist(substTerm(I,T),[E1|E2],[E1_|E2_]).
+    substTerm(_,_,T,T).
+
+    substFormula(I,T,P*Es,P*Es_) :- !,maplist(substTerm(I,T),Es,Es_).
+    substFormula(I,T,forall(X,F),forall(X,F_)) :- !,substFormula(I,T,F,F_).
+    substFormula(I,T,exist(X,F),exist(X,F_)) :- !,substFormula(I,T,F,F_).
+    substFormula(I,T,F,F_) :- F=..[Op,F1,F2],!,
+                              maplist(substFormula(I,T),[F1,F2],Fs),F_=..[Op|Fs].
+    substFormula(_,_,F,F).
+
+    substPred(I,P,I*Ts,F_) :- !,beta(Ts,P,F_).
+    substPred(I,P,forall(V,F),forall(V,F_)) :- !,substPred(I,P,F,F_).
+    substPred(I,P,exist(V,F),exist(V,F_)) :- !,substPred(I,P,F,F_).
+    substPred(I,P,F,F_) :- F=..[Op,F1,F2],!,
+                           maplist(substPred(I,P),[F1,F2],Fs),F_=..[Op|Fs].
+    substPred(_,_,Pred,Pred) :- !.
+    beta(Xs,predFun([],P),F_) :- beta(Xs,P,F_).
+    beta([],predFun(Z,P),_) :- throw(argumentsNotFullyApplied(predFun(Z,P))).
+    beta([],predFml(F),F).
+    beta([X|Xs],predFun([T|Ts],F),F_) :- sbterm(T,X,F,F1),
+                                         beta(Xs,predFun(Ts,F1),F_).
+    beta(Xs,predFml(F)) :- throw(cannotApplyToFormula(Xs,F)).
+    sbterm(T,X,predFun(Ys,F),predFun(Ys,F_)) :- sbterm(T,X,F,F_).
+    sbterm(T,X,predFml(F),predFml(F_)) :- substFormula(T,X,F,F_).
+
+Prologは `=../2` を使って複合項を分離できるので分離して`or`,`and`,`==>`をまとめて処理しています。
+betaってなに? todo
+
+## コマンド実行
+
+    comRun((_,[]),     _,[]).
+    comRun((_,J),     [], J).
+    comRun((G,J_),[C|Cs], J) :- !,com(C,G,J_,R),comRun(R,Cs,J).
+    comRun(E,          _, _) :- throw(E).
+
+comRun/3はコマンドを実行する述語です。
+`ruleRun/3` と同様に判断リストJがなくなるかコマンドリストCがなくなるまで `com/4` を実行しエラーがあったら例外を投げます。
+
+com/4は1回に1つだけ実行します。
+実行後処理の継続を返します。コマンドと環境と判断列から判断列と環境を返します。
+proofRun、comRunから呼び出されます。
+
+    com(apply(Rs)    ,G,J,R) :- !,rule(Rs,J,J_),!,(is_list(J_),R=(G,J_)
+                                ;R=comError(apply,J_,J)).
+    com(noApply(R1)  ,G,J,R) :- !,rule([R1],J,J_),!,(is_list(J_),R=(G,J)
+                                ;R=comError(noapply,J_,J)).
+    com(use(I)       ,G,J,R) :- !,com(use(I, []),G,J,R).
+    com(use(I,Pairs) ,G,J,R) :- member(thms=Thms,G),member(I=F,Thms),
+                                !,catch({
+                                  foldl([Idt:Pred,F1,F1_]>>(
+                                    format(atom(Idt1),'?~w',[Idt]),
+                                    substPred(Idt1,Pred,F1,F1_)
+                                  ),Pairs,F,F_),!,
+                                  [(A⊦Props)|J_]=J,!,R=(G,[[F_|A]⊦Props|J_])
+                                },Err,{R=comError(use,cannotUse(I,Pairs,Err),J)}).
+    com(use(I,_)     ,_,J,R) :- !,R=comError(use, noSuchTheorem(I),J).
+    com(inst(I,Pred), G,J,R) :- J=[[A|Assms]⊦Props|J_],
+                                !,catch({
+                                  format(atom(I1),'?~w',[I]),substPred(I1,Pred,A,A_),
+                                  R=(G,[[A_|Assms]⊦Props|J_])
+                                },Err,{R=comError(inst, cannotInstantiate(Err),J)}).
+    com(inst(_,_)    ,_,J,R) :- !,R=comError(inst,'empty rulement',J).
+    com(com(defer,[]),G,J,R) :- !,J=[J1|J_],append(J_,[J1],J_2),R=(G,J_2).
+    com(com(Com,Args),G,J,R) :- member(coms=Coms,G),member(Com=Cmd,Coms),
+                                !,catch({
+                                  call(Cmd,G,Args,J,Cs),!,
+                                  comRun((G,J),Cs,J_),R=(G,J_)
+                                },E,{
+                                  E=comError(_,Err,_)->R=comError(Com,Err,J);
+                                  true               ->R=comError(Com,E,J)
+                                }).
+    com(com(Com,_)   ,_,J,R) :- R=comError(Com, noSuchCom(Com),J).
+
+コマンドは規則を実行するapply,規則が動くことを確認するnoApply、定理を使って判断を増やすuse、判断のトップの置換をするinst、ユーザー定義コマンドを実行するcomがあります。ユーザー定義の組み込みコマンドにはdeferコマンドがありこれは最初の判断を最後に移動します。
+
 
 ## 宣言実行
 
@@ -84,6 +204,16 @@ theoremは定理で、公理と同様に型推論を行いますが証明が必�
 plFileはPrologのファイルを読み込む命令です。プラグインとしてuse_moduleを用いて読み込み、環境に組み込みます。
 newDeclはユーザーが定義した宣言をdeclRunを用いて実行します。
 
+    proofRun((G,[]),    _,N,R) :- !,call(N,G,R),!.
+    proofRun((_,J),    [],_,R) :- !,R=proofNotFinished(J).
+    proofRun((G,J),[C|Cs],N,R) :- !,com(C,G,J,R1),!,proofRun(R1,Cs,N,R).
+    proofRun(Err,       _,_,R) :- !,R=Err.
+
+proofRunは証明を実行するためのコマンドを実行します。comRun/3に似ていますが、動作が異なります。
+判断がなくなれば終了コマンド`N/2`を実行し、
+判断は残っているのにコマンドがなくなった場合は証明終わっていないことを返します。
+エラーが帰ってきた場合はエラーをそのまま返却します。
+
     insertThm(Idx,F,G,G_) :-  member(types=Types,G),metagen(Types,F,F_),
                               select(thms=Thms,G,thms=[Idx=F_|Thms],G_).
     metagen(E,P*Es,P *Es) :- member(P=_,E).
@@ -98,140 +228,6 @@ newDeclはユーザーが定義した宣言をdeclRunを用いて実行します
 
 insertThm/4 は定理を環境に保存するのですがその際は環境にない述語をmetagenを用いて述語の名前に?を付けます。
 
-## コマンド実行
-
-    % command
-    proofRun((G,[]),    _,N,R) :- !,call(N,G,R),!.
-    proofRun((_,J),    [],_,R) :- !,R=proofNotFinished(J).
-    proofRun((G,J),[C|Cs],N,R) :- !,com(C,G,J,R1),!,proofRun(R1,Cs,N,R).
-    proofRun(Err,       _,_,R) :- !,R=Err.
-
-proofRunは証明を実行するためのコマンドを実行します。
-判断がなくなれば終了コマンドを実行し、
-判断は残っているのにコマンドがなくなった場合は証明終わっていないことを返します。
-判断もコマンドもあれば1つコマンドを実行しproofRunを呼び出して次のコマンドを実行します。
-エラーが帰ってきた場合はエラーをそのまま返却します。
-
-    comRun((_,[]),     _,[]).
-    comRun((_,J),     [], J).
-    comRun((G,J_),[C|Cs], J) :- !,com(C,G,J_,R),comRun(R,Cs,J).
-    comRun(E,          _, _) :- throw(E).
-
-comRun/3はユーザー定義されたコマンドを実行する際に使います。proofRun/3に似ていますが、動作が異なります。
-
-com/4は1回に1つだけ実行します。
-実行後処理の継続を返します。コマンドと環境と判断列から判断列と環境を返します。
-proofRun、comRunから呼び出されます。
-
-    com(apply(Rs)    ,G,J,R) :- !,judge(Rs,J,J_),!,(is_list(J_),R=(G,J_)
-                                ;R=comError(apply,J_,J)).
-    com(noApply(R1)  ,G,J,R) :- !,judge([R1],J,J_),!,(is_list(J_),R=(G,J)
-                                ;R=comError(noapply,J_,J)).
-    com(use(I)       ,G,J,R) :- !,com(use(I, []),G,J,R).
-    com(use(I,Pairs) ,G,J,R) :- member(thms=Thms,G),member(I=F,Thms),
-                                !,catch({
-                                  foldl([Idt:Pred,F1,F1_]>>(
-                                    format(atom(Idt1),'?~w',[Idt]),
-                                    substPred(Idt1,Pred,F1,F1_)
-                                  ),Pairs,F,F_),!,
-                                  [(A⊦Props)|J_]=J,!,R=(G,[[F_|A]⊦Props|J_])
-                                },Err,{R=comError(use,cannotUse(I,Pairs,Err),J)}).
-    com(use(I,_)     ,_,J,R) :- !,R=comError(use, noSuchTheorem(I),J).
-    com(inst(I,Pred), G,J,R) :- J=[[A|Assms]⊦Props|J_],
-                                !,catch({
-                                  format(atom(I1),'?~w',[I]),substPred(I1,Pred,A,A_),
-                                  R=(G,[[A_|Assms]⊦Props|J_])
-                                },Err,{R=comError(inst, cannotInstantiate(Err),J)}).
-    com(inst(_,_)    ,_,J,R) :- !,R=comError(inst,'empty judgement',J).
-    com(com(defer,[]),G,J,R) :- !,J=[J1|J_],append(J_,[J1],J_2),R=(G,J_2).
-    com(com(Com,Args),G,J,R) :- member(coms=Coms,G),member(Com=Cmd,Coms),
-                                !,catch({
-                                  call(Cmd,G,Args,J,Cs),!,
-                                  comRun((G,J),Cs,J_),R=(G,J_)
-                                },E,{
-                                  E=comError(_,Err,_)->R=comError(Com,Err,J);
-                                  true               ->R=comError(Com,E,J)
-                                }).
-    com(com(Com,_)   ,_,J,R) :- R=comError(Com, noSuchCom(Com),J).
-
-コマンドは規則を実行するapply,規則が動くことを確認するnoApply、定理を使って判断を増やすuse、判断のトップの置換をするinst、ユーザー定義コマンドを実行するcomがあります。ユーザー定義の組み込みコマンドにはdeferコマンドがありこれは最初の判断を最後に移動します。
-
-
-## 判断実行
-
-判断の処理はjudge/3で行います。
-
-    % judge
-    %judge(Rs,Js,_) :- writeln(judge(Rs;Js)),fail.
-    judge([i|R],[A⊦A|J],J_) :- judge(R,J,J_).
-    judge([cut(F)|R],[A⊦P|J],J_) :- judge(R,[A⊦[F|P],[F|A]⊦P|J],J_).
-    judge([andL1|R],[[and(F,_)|A]⊦P|J],J_) :- judge(R,[[F|A]⊦P|J],J_).
-    judge([andL2|R],[[and(_,F)|A]⊦P|J],J_) :- judge(R,[[F|A]⊦P|J],J_).
-    judge([andR|R],[A⊦[and(F1,F2)|P]|J],J_) :- judge(R,[A⊦[F1|P],A⊦[F2|P]|J],J_).
-    judge([orL|R],[[or(F1,F2)|A]⊦P|J],J_) :- judge(R,[[F1|A]⊦P,[F2|A]⊦P|J],J_).
-    judge([orR1|R],[A⊦[or(F,_)|P]|J],J_) :- judge(R,[A⊦[F|P]|J],J_).
-    judge([orR2|R],[A⊦[or(_,F)|P]|J],J_) :- judge(R,[A⊦[F|P]|J],J_).
-    judge([impL|R],[[F1==>F2|A]⊦P|J],J_) :- judge(R,[A⊦[F1|P],[F2|A]⊦P|J],J_).
-    judge([impR|R],[A⊦[F1==>F2|P]|J],J_) :- judge(R,[[F1|A]⊦[F2|P]|J],J_).
-    judge([bottomL|R],[[bottom|_]⊦_|J],J_) :- judge(R,J,J_).
-    judge([topR|R],[_⊦[top|_]|J],J_) :- judge(R,J,J_).
-    judge([forallL(T)|R],[[forall(X,F)|A]⊦P|J],J_) :- substFormula(X,T,F,F_),
-                                                      judge(R,[[F_|A]⊦P|J],J_).
-    judge([forallR(Y)|R],[A⊦[forall(X,F)|P]|J],J_) :- substFormula(X,*Y,F,F_),
-                                                      judge(R,[A⊦[F_|P]|J],J_).
-    judge([existL(Y)|R],[[exist(X,F)|A]⊦P|J],J_) :- substFormula(X,*Y,F,F_),
-                                                    judge(R,[[F_|A]⊦P|J],J_).
-    judge([existR(T)|R],[A⊦[exist(X,F)|P]|J],J_) :- substFormula(X,T,F,F_),
-                                                    judge(R,[A⊦[F_|P]|J],J_).
-    judge([wL|R],[[_|A]⊦P|J],J_) :- judge(R,[A⊦P|J],J_).
-    judge([wR|R],[A⊦[_|P]|J],J_) :- judge(R,[A⊦P|J],J_).
-    judge([cL|R],[[F|A]⊦P|J],J_) :- judge(R,[[F,F|A]⊦P|J],J_).
-    judge([cR|R],[A⊦[F|P]|J],J_) :- judge(R,[A⊦[F,F|P]|J],J_).
-    judge([pL(K)|R],[A⊦P|J],J_) :- length(A,L),K<L,nth0(K,A,Ak,K_),
-                                   judge(R,[[Ak|K_]⊦P|J],J_).
-    judge([pR(K)|R],[A⊦P|J],J_) :- length(P,L),K<L,nth0(K,P,Pk,P_),
-                                   judge(R,[A⊦[Pk|P_]|J],J_).
-    judge([],J,J) :- !.
-    judge([R|_],J,cannotApply(R,J)).
-
-この処理は末尾再帰最適化されたRC状態マシンとしてみるとわかりやすいでしょう。
-ルールのリストと判断のリストを受取りルールに基づいて判断のリストを書き換えます。
-ルールがなくなるか、エラーになるまで動き続け、判断リストまたはエラーを返します。
-
-## 置換
-
-ラムダ項、論理式、述語、の置換処理があります。
-
-    % subst
-    substTerm(I,T,*I,T) :- !.
-    substTerm(I,T,fun Is->E,fun Is->E_) :- \+member(I,Is),!,substTerm(I,T,E,E_).
-    substTerm(I,T,E1$E2,E1_$E2_) :- !,maplist(substTerm(I,T),[E1|E2],[E1_|E2_]).
-    substTerm(_,_,T,T).
-
-    substFormula(I,T,P*Es,P*Es_) :- !,maplist(substTerm(I,T),Es,Es_).
-    substFormula(I,T,forall(X,F),forall(X,F_)) :- !,substFormula(I,T,F,F_).
-    substFormula(I,T,exist(X,F),exist(X,F_)) :- !,substFormula(I,T,F,F_).
-    substFormula(I,T,F,F_) :- F=..[Op,F1,F2],!,
-                              maplist(substFormula(I,T),[F1,F2],Fs),F_=..[Op|Fs].
-    substFormula(_,_,F,F).
-
-    substPred(I,P,I*Ts,F_) :- !,beta(Ts,P,F_).
-    substPred(I,P,forall(V,F),forall(V,F_)) :- !,substPred(I,P,F,F_).
-    substPred(I,P,exist(V,F),exist(V,F_)) :- !,substPred(I,P,F,F_).
-    substPred(I,P,F,F_) :- F=..[Op,F1,F2],!,
-                           maplist(substPred(I,P),[F1,F2],Fs),F_=..[Op|Fs].
-    substPred(_,_,Pred,Pred) :- !.
-    beta(Xs,predFun([],P),F_) :- beta(Xs,P,F_).
-    beta([],predFun(Z,P),_) :- throw(argumentsNotFullyApplied(predFun(Z,P))).
-    beta([],predFml(F),F).
-    beta([X|Xs],predFun([T|Ts],F),F_) :- sbterm(T,X,F,F1),
-                                         beta(Xs,predFun(Ts,F1),F_).
-    beta(Xs,predFml(F)) :- throw(cannotApplyToFormula(Xs,F)).
-    sbterm(T,X,predFun(Ys,F),predFun(Ys,F_)) :- sbterm(T,X,F,F_).
-    sbterm(T,X,predFml(F),predFml(F_)) :- substFormula(T,X,F,F_).
-
-betaってなにとかtodo
-Prologは=..を使って複合項を分離できるので分離して処理することでor,and,==>の処理をまとめて１行で書けてたりします。
 
 ## 型検査 infer
 
@@ -393,3 +389,16 @@ absL
       apply([pR(1),wR, wL])
     ]).
     absL(_,Arg,Js,_) :- throw(wrongArgument(Arg,Js)).
+
+
+todo 読者目線で見ることを考えてこの文書を改善する
+
+- 命令の意味がわからない
+- Prologの難しい機能使わんでくれ
+- 抽象構文に、静的型付けするための無駄なネストがあるので消してくれ
+- BNFとか知らんよ
+    - BNF簡単だぞ
+    - 構文検査はBNFライクにしたい
+        - RTG使おう
+- ライセンスは？
+- 元の文書のリンクないよ
