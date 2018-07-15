@@ -1,6 +1,6 @@
 :- module(pcla,[]).
 :- expects_dialect(sicstus),bb_put(cnt,0).
-:- op(1200,xfx,⊦), op(650,xfy,[==>,$,=>]), op(10,fx,[*,fun]).
+:- op(1200,xfx,⊦), op(650,xfy,[==>,=>]), op(10,fx,[*,fun]).
 
 {A} :- call(A).
 
@@ -39,7 +39,7 @@ rule(pR(K),[A⊦P|J],[A⊦[Pk|P_]|J]) :- length(P,L),K<L,nth0(K,P,Pk,P_).
 
 substTerm(I,T,I,T) :- atom(I),!.
 substTerm(I,T,fun Is->E,fun Is->E_) :- \+member(I,Is),!,substTerm(I,T,E,E_).
-substTerm(I,T,E1$E2,E1_$E2_) :- !,maplist(substTerm(I,T),[E1|E2],[E1_|E2_]).
+substTerm(I,T,E*Es,E_*Es_) :- !,maplist(substTerm(I,T),[E|Es],[E_|Es_]).
 substTerm(_,_,T,T).
 
 substFormula(I,T,P*Es,P*Es_) :- !,maplist(substTerm(I,T),Es,Es_).
@@ -161,7 +161,7 @@ inferTerm(G,fun Xs->E,T,S,S_) :-
   inferTerm(G,E,T2,S,S1),
   bb_get(ctx,Ctx2),foldl([X,Ctx3,Ctx3_]>>select(X=_,Ctx3,Ctx3_),Xs,Ctx2,Ctx2_),bb_put(ctx,Ctx2_),
   newVarT(T),foldl([_=T3,T21,(T3->T21)]>>!,XTs,T2,T2_),unify((T2_,T),S1,S_).
-inferTerm(G,E$Es,T,S,S5) :-
+inferTerm(G,E*Es,T,S,S5) :-
   inferTerm(G,E,T1,S,S1),!,
   foldl([E2,(Ts2,S2),([T2|Ts2],S3)]>>inferTerm(G,E2,T2,S2,S3),Es,([],S1),(Ts,S4)),
   newVarT(T),foldl([T3,T4,(T3->T4)]>>!,Ts,T,T2),unify((T1,T2),S4,S5).
