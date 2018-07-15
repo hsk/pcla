@@ -1,14 +1,14 @@
 = Constants =
-iff=(conT(bool,[])->conT(bool,[])->conT(bool,[]))
-or=(conT(bool,[])->conT(bool,[])->conT(bool,[]))
-and=(conT(bool,[])->conT(bool,[])->conT(bool,[]))
-not=(conT(bool,[])->conT(bool,[]))
-false=conT(bool,[])
-ex=((varT(a)->conT(bool,[]))->conT(bool,[]))
-all=((varT(a)->conT(bool,[]))->conT(bool,[]))
-true=conT(bool,[])
-eqt=(varT(a)->varT(a)->conT(bool,[]))
-imp=(conT(bool,[])->conT(bool,[])->conT(bool,[]))
+iff=(bool*[]->bool*[]->bool*[])
+or=(bool*[]->bool*[]->bool*[])
+and=(bool*[]->bool*[]->bool*[])
+not=(bool*[]->bool*[])
+false=bool*[]
+ex=((varT(a)->bool*[])->bool*[])
+all=((varT(a)->bool*[])->bool*[])
+true=bool*[]
+eqt=(varT(a)->varT(a)->bool*[])
+imp=(bool*[]->bool*[]->bool*[])
 eq=(varT(a)->varT(a)->prop)
 = Proved Theorems =
 eqssubst=eq*[*eqt$[*t,*s],*true]==> ?P*[*s]==> ?P*[*t]

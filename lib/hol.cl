@@ -1,54 +1,54 @@
 import('lib/preliminaries.cl').
 
 % imply,eq
-constant(imp,conT(bool,[]) -> conT(bool,[]) -> conT(bool,[])).
-constant(eqt,varT(a) ->varT(a) -> conT(bool,[])).
+constant(imp,bool*[] -> bool*[] -> bool*[]).
+constant(eqt,varT(a) ->varT(a) -> bool*[]).
 
 % connectives & quantifiers
 
 newDecl(definition,[
-  n(true : conT(bool,[])),
-  p([predFml(eq*[*true,*eqt$[fun[x]-> *x,fun[x]-> *x]])])
+  n(true : bool*[]),
+  p([eq*[*true,*eqt$[fun[x]-> *x,fun[x]-> *x]]])
 ]).
 newDecl(definition,[
-  n( all: ((varT(a) -> conT(bool,[])) -> conT(bool,[]))),
-  p([predFml(eq*[*all$[*'P'],*eqt$[*'P',fun[x]-> *true]])])
+  n( all: ((varT(a) -> bool*[]) -> bool*[])),
+  p([eq*[*all$[*'P'],*eqt$[*'P',fun[x]-> *true]]])
 ]).
 newDecl(definition,[
-  n( ex: ((varT(a) -> conT(bool,[])) -> conT(bool,[])) ),
-  p([predFml(eq*[
+  n( ex: ((varT(a) -> bool*[]) -> bool*[]) ),
+  p([eq*[
     *ex$[*'P'],
     *all$[fun['Q']->
       *imp$[
         *all$[fun[x]-> *imp$[*'P'$[*x],*'Q']],
-        *'Q']]])])]).
+        *'Q']]]])]).
 newDecl(definition,[
-  n( false: conT(bool,[]) ),
-  p([predFml(eq*[*false,*all$[fun['P']-> *'P']])])
+  n( false: bool*[] ),
+  p([eq*[*false,*all$[fun['P']-> *'P']]])
 ]).
 newDecl(definition,[
-  n( not: (conT(bool,[]) -> conT(bool,[])) ),
-  p([predFml(eq*[*not$[*'P'],*imp$[*'P',*false]])])
+  n( not: (bool*[] -> bool*[]) ),
+  p([eq*[*not$[*'P'],*imp$[*'P',*false]]])
 ]).
 newDecl(definition,[
-  n( and: (conT(bool,[]) -> conT(bool,[]) -> conT(bool,[])) ),
-  p([predFml(eq*[
+  n( and: (bool*[] -> bool*[] -> bool*[]) ),
+  p([eq*[
     *and$[*'P',*'Q'],
     *all$[fun['R']->
       *imp$[
         *imp$[*'P',*imp$[*'Q',*'R']],
-        *'R']]])])]).
+        *'R']]]])]).
 newDecl(definition,[
-  n( or: (conT(bool,[]) -> conT(bool,[]) -> conT(bool,[])) ),
-  p([predFml(eq*[
+  n( or: (bool*[] -> bool*[] -> bool*[]) ),
+  p([eq*[
     *or$[*'P',*'Q'],
     *all$[fun['R']->
       *imp$[
         *imp$[*'P',*'R'],
-        *imp$[*imp$[*'Q',*'R'],*'R']]]])])]).
+        *imp$[*imp$[*'Q',*'R'],*'R']]]]])]).
 newDecl(definition,[
-  n( iff: (conT(bool,[]) -> conT(bool,[]) -> conT(bool,[])) ),
-  p([predFml(eq*[*iff$[*'P',*'Q'],*eqt$[*'P',*'Q']])])]).
+  n( iff: (bool*[] -> bool*[] -> bool*[]) ),
+  p([eq*[*iff$[*'P',*'Q'],*eqt$[*'P',*'Q']]])]).
 axiom(eqrefl,eq*[*eqt$[*t,*t],*true]).
 axiom(eqsubst,eq*[*eqt$[*s,*t],*true] ==> 'P'*[*s] ==> 'P'*[*t]).
 axiom(eqext,
@@ -73,7 +73,7 @@ axiom('True_or_False', eq*[*or$[*eqt$[*'P',*true],*eqt$[*'P',*false]], *true]).
 theorem(eqsym,eq*[*eqt$[*s,*t],*true] ==> eq*[*eqt$[*t,*s],*true],
   proof([
     apply([impR]),
-    com(implyL,i([(eqsubst,['P': predFun([x],predFml(eq*[*eqt$[*x,*s],*true]))])])),
+    com(implyL,i([(eqsubst,['P': ([x]=>eq*[*eqt$[*x,*s],*true])])])),
     com(implyR,[]),
     use(eqrefl,[]),
     com(genR,i([(s,[])])),
@@ -95,6 +95,6 @@ theorem(eqssubst,eq*[*eqt$[*t,*s],*true] ==> 'P'*[*s] ==> 'P'*[*t],
     apply([forallR(r),forallR(t)]),
     com(genR,i([(r,[])])),
     apply([forallR(s)]),
-    use(eqsubst,['P': predFun([x],predFml('P'*[*x]))]),
+    use(eqsubst,['P': ([x]=>'P'*[*x])]),
     apply([i])
   ])).

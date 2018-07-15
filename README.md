@@ -406,3 +406,5 @@ absL
 ## 参考
 
 [1] https://qiita.com/advent-calendar/2017/myuon_myon_cs
+
+[2] https://www.cl.cam.ac.uk/research/hvg/Isabelle/dist/Isabelle2017/doc/implementation.pdf

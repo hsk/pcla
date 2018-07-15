@@ -1,6 +1,6 @@
 :- module(pcla,[]).
 :- expects_dialect(sicstus),bb_put(cnt,0).
-:- op(1200,xfx,⊦), op(650,xfy,[==>,$]), op(10,fx,[*,fun]).
+:- op(1200,xfx,⊦), op(650,xfy,[==>,$,=>]), op(10,fx,[*,fun]).
 
 {A} :- call(A).
 
@@ -53,13 +53,13 @@ substPred(I,P,forall(V,F),forall(V,F_)) :- !,substPred(I,P,F,F_).
 substPred(I,P,exist(V,F),exist(V,F_)) :- !,substPred(I,P,F,F_).
 substPred(I,P,F,F_) :- F=..[Op,F1,F2],!,maplist(substPred(I,P),[F1,F2],Fs),F_=..[Op|Fs].
 substPred(_,_,Pred,Pred) :- !.
-beta(Xs,predFun([],P),F_) :- beta(Xs,P,F_).
-beta([],predFun(Z,P),_) :- throw(argumentsNotFullyApplied(predFun(Z,P))).
-beta([X|Xs],predFun([T|Ts],F),F_) :- sbterm(T,X,F,F1),beta(Xs,predFun(Ts,F1),F_).
-beta([],predFml(F),F).
-beta(Xs,predFml(F)) :- throw(cannotApplyToFormula(Xs,F)).
-sbterm(T,X,predFun(Ys,F),predFun(Ys,F_)) :- sbterm(T,X,F,F_).
-sbterm(T,X,predFml(F),predFml(F_)) :- substFormula(T,X,F,F_).
+beta(Xs,[]=>P,F_) :- beta(Xs,P,F_).
+beta([],Z=>P,_) :- throw(argumentsNotFullyApplied(Z=>P)).
+beta([X|Xs],[T|Ts]=>F,F_) :- sbterm(T,X,F,F1),beta(Xs,Ts=>F1,F_).
+beta([],F,F).
+beta(Xs,F) :- throw(cannotApplyToFormula(Xs,F)).
+sbterm(T,X,Ys=>F,Ys=>F_) :- sbterm(T,X,F,F_).
+sbterm(T,X,F,F_) :- substFormula(T,X,F,F_).
 
 % command
 
@@ -171,19 +171,19 @@ inst(varT(I),T,C,C) :- member(I=T,C).
 inst(varT(I),T,C,[I=T|C]) :- newVarT(T).
 inst(prop,prop,C,C).
 inst(X->Y,X_->Y_) --> inst(X,X_),inst(Y,Y_).
-inst(conT(Cn,[]),conT(Cn,[]),C,C).
-inst(conT(Cn,[X|Xs]),conT(Cn,[X_|Xs_])) --> inst(X,X_),inst(conT(Cn,Xs),conT(Cn,Xs_)).
+inst(Cn*[],Cn*[],C,C).
+inst(Cn*[X|Xs],Cn*[X_|Xs_]) --> inst(X,X_),inst(Cn*Xs,Cn*Xs_).
 
 unify((X,X)) --> {!}.
 unify((varT(I),T),S,S_) :- member(varT(I)=T1,S),unify((T1,T),S,S_).
 unify((varT(I),T)) --> {occurs(I,T)},union([varT(I),T]).
 unify((T,varT(I))) --> unify((varT(I),T)).
-unify((conT(C,Xs),conT(C,Ys))) --> {maplist(unify1,Xs,Ys,XYs)},foldl(unify,XYs).
+unify((C*Xs,C*Ys)) --> {maplist(unify1,Xs,Ys,XYs)},foldl(unify,XYs).
 unify(((X1->X2),(Y1->Y2))) --> unify((X1,Y1)),unify((X2,Y2)).
 unify((X,Y)) --> {throw(unificationFailed(X,Y))}.
 unify1(X,Y,(X,Y)).
 occurs(T,I,varT(I)) :- throw(unificationFailed(varT(I), T)).
-occurs(T,I,conT(_,Ts)) :- maplist(occurs(T,I),Ts).
+occurs(T,I,_*Ts) :- maplist(occurs(T,I),Ts).
 occurs(T,I,T1->T2) :- occurs(T,I,T1),occurs(T,I,T2).
 occurs(_,_,_).
 occurs(I,T) :- occurs(T,I,T),!.

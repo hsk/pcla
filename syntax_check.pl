@@ -1,4 +1,4 @@
-:- op(1200,xfx,⊦), op(650,xfy,[==>,$]), op(10,fx,[*,fun]).
+:- op(1200,xfx,⊦), op(650,xfy,[==>,$,=>]), op(10,fx,[*,fun]).
 
 % fol
 
@@ -16,11 +16,11 @@ formula(F1==>F2) :- formula(F1),formula(F2).
 formula(forall(I,F)) :- ident(I),formula(F).
 formula(exist(I,F)) :- ident(I),formula(F).
 
-predicate(predFun(Is,P)) :- maplist(ident,Is),predicate(P).
-predicate(predFml(F)) :- formula(F).
+predicate(Is=>P) :- !,maplist(ident,Is),predicate(P).
+predicate(F) :- formula(F).
 
 typeForm(TA,varT(A)) :- !,call(TA,A).
-typeForm(TA,conT(I,Ts)) :- !,ident(I),maplist(typeForm(TA),Ts).
+typeForm(TA,I*Ts) :- !,ident(I),maplist(typeForm(TA),Ts).
 typeForm(TA,T1->T2) :- !,typeForm(TA,T1),!,typeForm(TA,T2).
 typeForm(_,prop) :- !.
 type(T) :- typeForm(ident,T),!.

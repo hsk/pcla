@@ -53,7 +53,7 @@ export_command([assumption,implyR,implyL,genR,genL,absL]).
 
 /* --------------------------------------------- */
 
-definition([n(I:Typ),p([predFml(Body)])],[constant(I,Typ),axiom(I2,Body)]) :- format(atom(I2),'~w_def',[I]).
+definition([n(I:Typ),p([Body])],[constant(I,Typ),axiom(I2,Body)]) :- format(atom(I2),'~w_def',[I]).
 definition(Arg,_) :- throw(wrongArgument(Arg)).
 
 export_decl([definition]).
