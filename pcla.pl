@@ -1,6 +1,6 @@
 :- module(pcla,[]).
 :- expects_dialect(sicstus),bb_put(cnt,0).
-:- op(1200,xfx,⊦), op(650,xfy,[==>,=>]), op(10,fx,[*,fun]).
+:- op(1200,xfx,⊦), op(650,xfy,[==>,=>]).
 
 {A} :- call(A).
 
@@ -38,7 +38,7 @@ rule(pL(K),[A⊦P|J],[[Ak|K_]⊦P|J]) :- length(A,L),K<L,nth0(K,A,Ak,K_).
 rule(pR(K),[A⊦P|J],[A⊦[Pk|P_]|J]) :- length(P,L),K<L,nth0(K,P,Pk,P_).
 
 substTerm(I,T,I,T) :- atom(I),!.
-substTerm(I,T,fun Is->E,fun Is->E_) :- \+member(I,Is),!,substTerm(I,T,E,E_).
+substTerm(I,T,Is->E,Is->E_) :- \+member(I,Is),!,substTerm(I,T,E,E_).
 substTerm(I,T,E*Es,E_*Es_) :- !,maplist(substTerm(I,T),[E|Es],[E_|Es_]).
 substTerm(_,_,T,T).
 
@@ -155,7 +155,7 @@ infer2(G,E,(P1,S2),((T2->P1),S2_)):-inferTerm(G,E,T2,S2,S2_).
 inferTerm(G,V,T_,S,S) :- atom(V),member(V=T,G),!,instantiate(T,T_).
 inferTerm(_,V,T,S,S) :- atom(V),bb_get(ctx,Ctx),member(V=T,Ctx).
 inferTerm(_,V,T,S,S) :- atom(V),newVarT(T),bb_update(ctx,Ctx,[V=T|Ctx]).
-inferTerm(G,fun Xs->E,T,S,S_) :-
+inferTerm(G,Xs->E,T,S,S_) :-
   foldl([X1,XTs1,[X1=T1|XTs1]]>>newVarT(T1),Xs,[],XTs),
   bb_get(ctx,Ctx),foldl([X=T,Ctx1,[X=T|Ctx1]]>>!,XTs,Ctx,Ctx_),bb_put(ctx,Ctx_),
   inferTerm(G,E,T2,S,S1),
