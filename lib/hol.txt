@@ -4,12 +4,12 @@ or=(bool*[]->bool*[]->bool*[])
 and=(bool*[]->bool*[]->bool*[])
 not=(bool*[]->bool*[])
 false=bool*[]
-ex=((varT(a)->bool*[])->bool*[])
-all=((varT(a)->bool*[])->bool*[])
+ex=((a->bool*[])->bool*[])
+all=((a->bool*[])->bool*[])
 true=bool*[]
-eqt=(varT(a)->varT(a)->bool*[])
+eqt=(a->a->bool*[])
 imp=(bool*[]->bool*[]->bool*[])
-eq=(varT(a)->varT(a)->prop)
+eq=(a->a->prop)
 = Proved Theorems =
 eqssubst=eq*[*eqt$[*t,*s],*true]==> ?P*[*s]==> ?P*[*t]
 eqsym=eq*[*eqt$[*s,*t],*true]==>eq*[*eqt$[*t,*s],*true]

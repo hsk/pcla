@@ -2,7 +2,7 @@ import('lib/preliminaries.cl').
 
 % imply,eq
 constant(imp,bool*[] -> bool*[] -> bool*[]).
-constant(eqt,varT(a) ->varT(a) -> bool*[]).
+constant(eqt,a -> a -> bool*[]).
 
 % connectives & quantifiers
 
@@ -11,11 +11,11 @@ newDecl(definition,[
   p([eq*[*true,*eqt$[fun[x]-> *x,fun[x]-> *x]]])
 ]).
 newDecl(definition,[
-  n( all: ((varT(a) -> bool*[]) -> bool*[])),
+  n( all: ((a -> bool*[]) -> bool*[])),
   p([eq*[*all$[*'P'],*eqt$[*'P',fun[x]-> *true]]])
 ]).
 newDecl(definition,[
-  n( ex: ((varT(a) -> bool*[]) -> bool*[]) ),
+  n( ex: ((a -> bool*[]) -> bool*[]) ),
   p([eq*[
     *ex$[*'P'],
     *all$[fun['Q']->

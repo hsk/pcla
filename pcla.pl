@@ -138,7 +138,7 @@ metagen(E,exist(V,F),exist(V,F_)) :- metagen(E,F,F_).
 
 
 % typing
-newVarT(varT(C1)) :- bb_get(cnt,C),C1 is C + 1,bb_put(cnt,C1).
+newVarT(C1) :- bb_get(cnt,C),C1 is C + 1,bb_put(cnt,C1).
 
 infer(G,F) :- bb_put(ctx,[]),infer1(G.types,F,[],_).
 infer1(G,P*Es,S,S_) :- member(P=T1,G),!,instantiate(T1,T1_),!,
@@ -166,23 +166,24 @@ inferTerm(G,E$Es,T,S,S5) :-
   foldl([E2,(Ts2,S2),([T2|Ts2],S3)]>>inferTerm(G,E2,T2,S2,S3),Es,([],S1),(Ts,S4)),
   newVarT(T),foldl([T3,T4,(T3->T4)]>>!,Ts,T,T2),unify((T1,T2),S4,S5).
 
+varT(A) :- integer(A);atom(A),A\=prop.
 instantiate(T,T_) :- inst(T,T_,[],_),!.
-inst(varT(I),T,C,C) :- member(I=T,C).
-inst(varT(I),T,C,[I=T|C]) :- newVarT(T).
+inst(I,T,C,C) :- varT(I),member(I=T,C).
+inst(I,T,C,[I=T|C]) :- newVarT(T).
 inst(prop,prop,C,C).
 inst(X->Y,X_->Y_) --> inst(X,X_),inst(Y,Y_).
 inst(Cn*[],Cn*[],C,C).
 inst(Cn*[X|Xs],Cn*[X_|Xs_]) --> inst(X,X_),inst(Cn*Xs,Cn*Xs_).
 
 unify((X,X)) --> {!}.
-unify((varT(I),T),S,S_) :- member(varT(I)=T1,S),unify((T1,T),S,S_).
-unify((varT(I),T)) --> {occurs(I,T)},union([varT(I),T]).
-unify((T,varT(I))) --> unify((varT(I),T)).
+unify((I,T),S,S_) :- varT(I),member(I=T1,S),unify((T1,T),S,S_).
+unify((I,T)) --> {varT(I),occurs(I,T)},union([I,T]).
+unify((T,I)) --> {varT(I)},unify((I,T)).
 unify((C*Xs,C*Ys)) --> {maplist(unify1,Xs,Ys,XYs)},foldl(unify,XYs).
 unify(((X1->X2),(Y1->Y2))) --> unify((X1,Y1)),unify((X2,Y2)).
 unify((X,Y)) --> {throw(unificationFailed(X,Y))}.
 unify1(X,Y,(X,Y)).
-occurs(T,I,varT(I)) :- throw(unificationFailed(varT(I), T)).
+occurs(T,I,I) :- varT(I),throw(unificationFailed(I, T)).
 occurs(T,I,_*Ts) :- maplist(occurs(T,I),Ts).
 occurs(T,I,T1->T2) :- occurs(T,I,T1),occurs(T,I,T2).
 occurs(_,_,_).

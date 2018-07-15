@@ -19,11 +19,12 @@ formula(exist(I,F)) :- ident(I),formula(F).
 predicate(Is=>P) :- !,maplist(ident,Is),predicate(P).
 predicate(F) :- formula(F).
 
-typeForm(TA,varT(A)) :- !,call(TA,A).
+typeForm(_,prop) :- !.
+typeForm(TA,A) :- call(TA,A).
 typeForm(TA,I*Ts) :- !,ident(I),maplist(typeForm(TA),Ts).
 typeForm(TA,T1->T2) :- !,typeForm(TA,T1),!,typeForm(TA,T2).
-typeForm(_,prop) :- !.
-type(T) :- typeForm(ident,T),!.
+identT(T) :- T \= prop,ident(T).
+type(T) :- typeForm(identT,T),!.
 
 % lk
 

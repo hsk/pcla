@@ -1,5 +1,5 @@
 plFile('lib/commands').
-constant(eq,varT(a)->varT(a)->prop).
+constant(eq,a->a->prop).
 axiom(refl, eq*[*r,*r]).
 axiom(subst, eq*[*a,*b] ==> 'P'*[*a] ==> 'P'*[*b]).
 theorem(sym, eq*[*r,*s] ==> eq*[*s,*r],proof([
