@@ -27,14 +27,14 @@ implyL(_,Arg,_,_) :- throw(wrongArgument(Arg)).
 genR(_,i([(I,[])]),[_ ⊦ [P|_] |_],[
   apply([cut(forall(I, P))]),
   com(defer, []),
-  apply([forallL(*I)]),
+  apply([forallL(I)]),
   com(assumption, []),
   apply([pR(1), wR])
 ]) :- !.
 genR(_,Arg,Js,_) :- throw(wrongArgument(Arg,Js)).
 genL(_,i([(I,[])]),[[P|Ps] ⊦ _ |_],[
   apply([cut(forall(I, P))]),
-  apply([forallR(*I)]),
+  apply([forallR(I)]),
   com(assumption, []),
   apply([pL(PLen), wL])
 ]) :- length(Ps,PLen).

@@ -27,8 +27,8 @@ rule(impR,[A⊦[F1==>F2|P]|J],[[F1|A]⊦[F2|P]|J]).
 rule(bottomL,[[bottom|_]⊦_|J],J).
 rule(topR,[_⊦[top|_]|J],J).
 rule(forallL(T),[[forall(X,F)|A]⊦P|J],[[F_|A]⊦P|J]) :- substFormula(X,T,F,F_).
-rule(forallR(Y),[A⊦[forall(X,F)|P]|J],[A⊦[F_|P]|J]) :- substFormula(X,*Y,F,F_).
-rule(existL(Y),[[exist(X,F)|A]⊦P|J],[[F_|A]⊦P|J]) :- substFormula(X,*Y,F,F_).
+rule(forallR(Y),[A⊦[forall(X,F)|P]|J],[A⊦[F_|P]|J]) :- substFormula(X,Y,F,F_).
+rule(existL(Y),[[exist(X,F)|A]⊦P|J],[[F_|A]⊦P|J]) :- substFormula(X,Y,F,F_).
 rule(existR(T),[A⊦[exist(X,F)|P]|J],[A⊦[F_|P]|J]) :- substFormula(X,T,F,F_).
 rule(wL,[[_|A]⊦P|J],[A⊦P|J]).
 rule(wR,[A⊦[_|P]|J],[A⊦P|J]).
@@ -37,7 +37,7 @@ rule(cR,[A⊦[F|P]|J],[A⊦[F,F|P]|J]).
 rule(pL(K),[A⊦P|J],[[Ak|K_]⊦P|J]) :- length(A,L),K<L,nth0(K,A,Ak,K_).
 rule(pR(K),[A⊦P|J],[A⊦[Pk|P_]|J]) :- length(P,L),K<L,nth0(K,P,Pk,P_).
 
-substTerm(I,T,*I,T) :- !.
+substTerm(I,T,I,T) :- atom(I),!.
 substTerm(I,T,fun Is->E,fun Is->E_) :- \+member(I,Is),!,substTerm(I,T,E,E_).
 substTerm(I,T,E1$E2,E1_$E2_) :- !,maplist(substTerm(I,T),[E1|E2],[E1_|E2_]).
 substTerm(_,_,T,T).
@@ -152,9 +152,9 @@ infer1(_,_,S,S).
 infer2(G,E,(P1,S2),((T2->P1),S2_)):-inferTerm(G,E,T2,S2,S2_).
 
 %inferTerm(_,E,_,_,_) :- writeln(inferTerm(E)),fail.
-inferTerm(G,*V,T_,S,S) :- member(V=T,G),!,instantiate(T,T_).
-inferTerm(_,*V,T,S,S) :- bb_get(ctx,Ctx),member(V=T,Ctx).
-inferTerm(_,*V,T,S,S) :- newVarT(T),bb_update(ctx,Ctx,[V=T|Ctx]).
+inferTerm(G,V,T_,S,S) :- atom(V),member(V=T,G),!,instantiate(T,T_).
+inferTerm(_,V,T,S,S) :- atom(V),bb_get(ctx,Ctx),member(V=T,Ctx).
+inferTerm(_,V,T,S,S) :- atom(V),newVarT(T),bb_update(ctx,Ctx,[V=T|Ctx]).
 inferTerm(G,fun Xs->E,T,S,S_) :-
   foldl([X1,XTs1,[X1=T1|XTs1]]>>newVarT(T1),Xs,[],XTs),
   bb_get(ctx,Ctx),foldl([X=T,Ctx1,[X=T|Ctx1]]>>!,XTs,Ctx,Ctx_),bb_put(ctx,Ctx_),

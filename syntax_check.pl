@@ -1,9 +1,9 @@
-:- op(1200,xfx,⊦), op(650,xfy,[==>,$,=>]), op(10,fx,[*,fun]).
+:- op(1200,xfx,⊦), op(650,xfy,[==>,$,=>]), op(10,fx,[fun]).
 
 % fol
 
 ident(S) :- atom(S).
-term(*I) :- ident(I).
+term(I) :- ident(I).
 term(fun Is->E) :- maplist(ident,Is),term(E).
 term(E$Es) :- term(E),maplist(term,Es).
 

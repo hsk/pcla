@@ -1,8 +1,8 @@
 :- module('lib/eqCommands',[]).
 
 refl(_,t(T),_,[
-  apply([cut(forall(r,eq*[*r,*r]))]),
-  use(refl, [eq: ([x]=>eq*[*x,*x])]),
+  apply([cut(forall(r,eq*[r,r]))]),
+  use(refl, [eq: ([x]=>eq*[x,x])]),
   apply([forallR(r)]),
   com(assumption, []),
   apply([forallL(T)]),
