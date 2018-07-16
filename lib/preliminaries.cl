@@ -5,7 +5,7 @@ axiom(subst, eq*[a,b]==>'P'*[a]==>'P'*[b]).
 theorem(sym, eq*[r,s]==>eq*[s,r],proof([
   apply([impR]),
   apply([cut(forall(a,forall(b, eq*[a,b]==>eq*[a,a]==>eq*[b,a])))]),
-  use(subst),
+  use(subst,[]),
   apply([forallR(a), forallR(b)]),
   inst('P',[x]=>eq*[x,a]),
   com(assumption,[]),
@@ -13,7 +13,7 @@ theorem(sym, eq*[r,s]==>eq*[s,r],proof([
   apply([impL]),
   com(assumption,[]),
   apply([impL]),
-  use(refl),
+  use(refl,[]),
   com(assumption,[]),
   com(assumption,[])
 ])).
@@ -21,7 +21,7 @@ theorem(sym, eq*[r,s]==>eq*[s,r],proof([
 theorem(trans, eq*[r,s]==>eq*[s,t]==>eq*[r,t],proof([
   apply([impR, impR]),
   apply([cut(forall(a,forall(b,eq*[a,b]==>eq*[r,a]==>eq*[r,b])))]),
-  use(subst),
+  use(subst,[]),
   inst('P',[x]=>eq*[r,x]),
   apply([forallR(a), forallR(b)]),
   com(assumption,[]),

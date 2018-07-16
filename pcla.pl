@@ -75,7 +75,6 @@ com(apply(Rs)    ,G,J,R) :- ruleRun(Rs,J,J_),is_list(J_),!,R=(G,J_).
 com(apply(Rs)    ,_,J,R) :- ruleRun(Rs,J,E),!,R=comError(apply,E,J).
 com(noApply(R1)  ,G,J,R) :- ruleRun([R1],J,J_),is_list(J_),!,R=(G,J).
 com(noApply(R1)  ,_,J,R) :- ruleRun([R1],J,E),!,R=comError(noapply,E,J).
-com(use(I)       ,G,J,R) :- !,com(use(I, []),G,J,R).
 com(use(I,Pairs) ,G,J,R) :- member(I=F,G.thms),
                             !,catch({
                               foldl([Idt:Pred,F1,Insts1]>>(

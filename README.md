@@ -132,7 +132,6 @@ Prologは `=../2` を使って複合項を分離できるので分離して`or`,
                                 ;R=comError(apply,J_,J)).
     com(noApply(R1)  ,G,J,R) :- !,rule([R1],J,J_),!,(is_list(J_),R=(G,J)
                                 ;R=comError(noapply,J_,J)).
-    com(use(I)       ,G,J,R) :- !,com(use(I, []),G,J,R).
     com(use(I,Pairs) ,G,J,R) :- member(thms=Thms,G),member(I=F,Thms),
                                 !,catch({
                                   foldl([Idt:Pred,F1,F1_]>>(

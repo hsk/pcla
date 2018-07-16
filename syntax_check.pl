@@ -50,7 +50,6 @@ argument(n(I:T)) :- ident(I),type(T).
 argument(i(IIPs)) :- maplist(ipairs,IIPs).
 command(apply(Rs)) :- maplist(rule,Rs).
 command(use(I,IPs)) :- thmIndex(I),pairs(IPs).
-command(use(I)) :- thmIndex(I).
 command(inst(I,P)) :- ident(I),predicate(P).
 command(noApply(R)) :- rule(R).
 command(com(I,A)) :- ident(I),argument(A).
