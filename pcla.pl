@@ -10,7 +10,6 @@ main :- current_prolog_flag(argv,[File|_]),read_file_to_terms(File,Ds,[]),!,
    writeln('= Proved Theorems ='),maplist(writeln,G.thms).
 
 % rule
-%ruleRun(Rs,Js,_) :- writeln(ruleRun(Rs;Js)),fail.
 ruleRun([],J,J).
 ruleRun([R1|R],J,J_) :- rule(R1,J,J1),ruleRun(R,J1,J_).
 ruleRun([R|_],J,_) :- cannotApply(R,J).
@@ -100,7 +99,6 @@ com(com(Com,Args),G,J,R) :- member(Com=Cmd,G.coms),
 com(com(Com,_)   ,_,J,R) :- R=comError(Com, noSuchCom(Com),J).
 
 % decl
-%decl(D,_,_) :- writeln(decl(D)),fail.
 declRun(G,     [],G) :- is_dict(G).
 declRun(G, [D|Ds],R) :- is_dict(G),decl(D,G,R1),!,declRun(R1,Ds,R).
 declRun(E,      D,_) :- writeln('decl error':E;D),halt(1).
@@ -134,8 +132,6 @@ metagen(E,F1==>F2,F1_==>F2_) :- metagen(E,F1,F1_),metagen(E,F2,F2_).
 metagen(E,forall(V,F),forall(V,F_)) :- metagen(E,F,F_).
 metagen(E,exist(V,F),exist(V,F_)) :- metagen(E,F,F_).
 
-
-
 % typing
 newVarT(C1) :- bb_get(cnt,C),C1 is C + 1,bb_put(cnt,C1).
 
@@ -150,7 +146,6 @@ infer1(G,F) --> {!,F=..[_,F1,F2]},foldl(infer1(G),[F1,F2]).
 infer1(_,_,S,S).
 infer2(G,E,(P1,S2),((T2->P1),S2_)):-inferTerm(G,E,T2,S2,S2_).
 
-%inferTerm(_,E,_,_,_) :- writeln(inferTerm(E)),fail.
 inferTerm(G,V,T_,S,S) :- atom(V),member(V=T,G),!,instantiate(T,T_).
 inferTerm(_,V,T,S,S) :- atom(V),bb_get(ctx,Ctx),member(V=T,Ctx).
 inferTerm(_,V,T,S,S) :- atom(V),newVarT(T),bb_update(ctx,Ctx,[V=T|Ctx]).
