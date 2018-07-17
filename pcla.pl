@@ -117,9 +117,9 @@ decl(plFile(N),    G,R) :- !,catch({
                                 union(G.decls,Ds_,Decl2),union(G.coms,Cs_,Coms3),
                                 R=G.put(decls,Decl2).put(coms,Coms3)
                               },_,{R=error(plFile, plFileLoadError(N))}).
-decl(newDecl(Dec,Arg),G,R) :- member(Dec=Fun,G.decls),!,
+decl(Dec*Arg,G,R) :- member(Dec=Fun,G.decls),!,
                               call(Fun,Arg,Ds),declRun(G,Ds,R).
-decl(newDecl(Dec,_),  _,R) :- !,R=error(Dec,noSuchDecl(Dec)).
+decl(Dec*_,  _,R) :- !,R=error(Dec,noSuchDecl(Dec)).
 
 insertThm(Idx,F,G,G_) :-  metagen(G.types,F,F_),G_=G.put(thms,[Idx=F_|G.thms]).
 metagen(E,P*Es,P*Es) :- member(P=_,E).

@@ -71,14 +71,14 @@ claire
                   | use(thmIndex,pairs)
                   | inst(ident,predicate)
                   | noApply(rule)
-                  | com(ident,argument).
+                  | ident*argument.
     decl        ::= theorem(thmIndex,formula,proof([command]))
                   | axiom(thmIndex,formula)
                   | import(atom)
                   | printProof
                   | constant(ident,type)
                   | plFile(atom)
-                  | newDecl(ident,[argument]).
+                  | ident*[argument].
     laire       ::= [decl].
 
 ## ユーザーマニュアル
@@ -86,7 +86,7 @@ claire
 pclaは大まかにいうとFOLとLKとDeclsの3つの層に分かれています。
 FOLはλ項のterm、論理式formula、述語predicate、型typeからなる一階述語論理です。
 LKは証明に用いる規則ruleを含みます。
-Declsは上位の宣言で、定理theorem,公理axiom,インポートimport,証明印字printProof,定数constant,Prologファイル読み込みplFile,ユーザー定義宣言newDeclから成ります。
+Declsは上位の宣言で、定理theorem,公理axiom,インポートimport,証明印字printProof,定数constant,Prologファイル読み込みplFile,ユーザー定義宣言から成ります。
 定理には証明が必ず必要で、証明の中身はcommandリストです。
 コマンドには規則適用apply,定理使用use,述語のインスタンス化inst,規則確認noApply,ユーザー定義コマンド適用comがあります。
 
@@ -402,9 +402,9 @@ Prologは `=../2` を使って複合項を分離できるので分離して`or`,
                                     union(G.decls,Ds_,Decl2),union(G.coms,Cs_,Coms3),
                                     R=G.put(decls,Decl2).put(coms,Coms3)
                                   },_,{R=error(plFile, plFileLoadError(N))}).
-    decl(newDecl(Dec,Arg),G,R) :- member(Dec=Fun,G.decls),!,
+    decl(Dec*Arg,G,R) :- member(Dec=Fun,G.decls),!,
                                   call(Fun,Arg,Ds),declRun(G,Ds,R).
-    decl(newDecl(Dec,_),  _,R) :- !,R=error(Dec,noSuchDecl(Dec)).
+    decl(D\ec*_,  _,R) :- !,R=error(Dec,noSuchDecl(Dec)).
 
 
 importは他のclファイルを読み込みます。
@@ -412,7 +412,7 @@ constantは定数宣言でtypesに名前とそれに対応する型を追加し�
 axiomは公理の宣言で、型推論`infer/2`を呼び出しその後、`insertThm/2`で環境に公理を保存します。公理は証明が必要ない命題なので証明はありません。
 theoremは定理の宣言で、公理と同様に型推論`infer/2`を呼び、`insertThm/2`で環境に定理を保存します。定理は証明が必要なので`comRun/3`と同様にコマンドを処理する`proofRun/4`を実行します。`proofRun/4`は正常終了時に行う処理を渡します。
 plFileはPrologのファイルを読み込む命令です。プラグインとしてuse_moduleを用いて読み込み、環境に組み込みます。
-newDeclはユーザーが定義した宣言を`declRun/3`を用いて実行します。
+decl*[argumet]はユーザーが定義した宣言を`declRun/3`を用いて実行します。
 
     proofRun((G,[]),    _,N,R) :- !,call(N,G,R),!.
     proofRun((_,J),    [],_,R) :- !,R=proofNotFinished(J).

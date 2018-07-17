@@ -60,7 +60,7 @@ decl(import(X)) :- atom(X).
 decl(printProof).
 decl(constant(I,T)) :- ident(I),type(T).
 decl(plFile(X)) :- atom(X).
-decl(newDecl(I,As)) :- ident(I),maplist(argument,As).
+decl(I*As) :- ident(I),maplist(argument,As).
 laire(Ds) :- maplist(decl,Ds).
 
 dependFile1(import(File)) :- check(File).

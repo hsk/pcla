@@ -59,7 +59,7 @@ decl        ::= theorem(thmIndex,formula,proof([command]))
               | printProof
               | constant(ident,type)
               | plFile(atom)
-              | newDecl(ident,[argument]).
+              | ident*[argument].
 laire       ::= [decl].
 
 dependFile1(import(File)) :- check(File).

@@ -6,37 +6,37 @@ constant(eqt,a->a->bool*[]).
 
 % connectives & quantifiers
 
-newDecl(definition,[
+definition*[
   n(true:bool*[]),
   p([eq*[true,eqt*[[x]->x,[x]->x]]])
-]).
-newDecl(definition,[
+].
+definition*[
   n(all:((a->bool*[])->bool*[])),
   p([eq*[all*['P'],eqt*['P',[x]->true]]])
-]).
-newDecl(definition,[
+].
+definition*[
   n(ex:((a->bool*[])->bool*[])),
   p([eq*[ ex*['P'],
-          all*[['Q']->imp*[all*[[x]->imp*['P'*[x],'Q']],'Q']]]])]).
-newDecl(definition,[
+          all*[['Q']->imp*[all*[[x]->imp*['P'*[x],'Q']],'Q']]]])].
+definition*[
   n(false:bool*[]),
   p([eq*[false,all*[['P']->'P']]])
-]).
-newDecl(definition,[
+].
+definition*[
   n(not:(bool*[]->bool*[])),
   p([eq*[not*['P'],imp*['P',false]]])
-]).
-newDecl(definition,[
+].
+definition*[
   n(and:(bool*[]->bool*[]->bool*[])),
   p([eq*[ and*['P','Q'],
-          all*[['R']->imp*[imp*['P',imp*['Q','R']],'R']]]])]).
-newDecl(definition,[
+          all*[['R']->imp*[imp*['P',imp*['Q','R']],'R']]]])].
+definition*[
   n(or:(bool*[]->bool*[]->bool*[])),
   p([eq*[ or*['P','Q'],
-          all*[['R']->imp*[imp*['P','R'],imp*[imp*['Q','R'],'R']]]]])]).
-newDecl(definition,[
+          all*[['R']->imp*[imp*['P','R'],imp*[imp*['Q','R'],'R']]]]])].
+definition*[
   n(iff:(bool*[]->bool*[]->bool*[])),
-  p([eq*[iff*['P','Q'],eqt*['P','Q']]])]).
+  p([eq*[iff*['P','Q'],eqt*['P','Q']]])].
 axiom(eqrefl,eq*[eqt*[t,t],true]).
 axiom(eqsubst,eq*[eqt*[s,t],true] ==> 'P'*[s] ==> 'P'*[t]).
 axiom(eqext,forall(x,eq*[eqt*[f*[x],g*[x]],true])==>
