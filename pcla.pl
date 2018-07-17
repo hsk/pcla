@@ -107,7 +107,7 @@ decl(constant(P,Typ), G,R) :- !,R=G.put(types,[P=Typ|G.types]).
 decl(axiom(Idx,F),    G,R) :- !,catch({
                                 infer(G,F),!,insertThm(Idx,F,G,R)
                               },Err,{R=error(axiom,typeError(F,Err))}).
-decl(theorem(Idx,F,P),G,R) :- !,catch({ P=proof(Cs),
+decl(theorem(Idx,F,P),G,R) :- !,catch({ P=proof:Cs,
                                 infer(G,F),!,G_=G.put(proof,[]),!,
                                 proofRun((G_,[[]⊦[F]]),Cs,insertThm(Idx,F),R)
                               },Err,{R=error(theorem,typeError(F,Err))}).

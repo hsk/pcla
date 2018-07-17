@@ -53,7 +53,7 @@ command     ::= apply([rule])
               | inst(ident,predicate)
               | noApply(rule)
               | ident*argument.
-decl        ::= theorem(thmIndex,formula,proof([command]))
+decl        ::= theorem(thmIndex,formula,proof:[command])
               | axiom(thmIndex,formula)
               | import(atom)
               | printProof

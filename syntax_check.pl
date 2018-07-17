@@ -53,8 +53,7 @@ command(use(I,IPs)) :- thmIndex(I),pairs(IPs).
 command(inst(I,P)) :- ident(I),predicate(P).
 command(noApply(R)) :- rule(R).
 command(I*A) :- ident(I),argument(A).
-proof(proof(Cs)) :- maplist(command,Cs).
-decl(theorem(I,F,Pr)) :- thmIndex(I),formula(F),proof(Pr).
+decl(theorem(I,F,proof:Cs)) :- thmIndex(I),formula(F),maplist(command,Cs).
 decl(axiom(I,F)) :- thmIndex(I),formula(F).
 decl(import(X)) :- atom(X).
 decl(printProof).

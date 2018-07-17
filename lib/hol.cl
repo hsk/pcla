@@ -51,7 +51,7 @@ axiom('True_or_False', eq*[or*[eqt*['P',true],eqt*['P',false]], true]).
 
 %% equality
 
-theorem(eqsym,eq*[eqt*[s,t],true] ==> eq*[eqt*[t,s],true],proof([
+theorem(eqsym,eq*[eqt*[s,t],true] ==> eq*[eqt*[t,s],true],proof:[
   apply([impR]),
   implyL*i([(eqsubst,['P':([x]=>eq*[eqt*[x,s],true])])]),
   implyR*[],
@@ -59,9 +59,9 @@ theorem(eqsym,eq*[eqt*[s,t],true] ==> eq*[eqt*[t,s],true],proof([
   genR*i([(s,[])]),
   apply([forallR(t)]),
   apply([i])
-])).
+]).
 
-theorem(eqssubst,eq*[eqt*[t,s],true] ==> 'P'*[s] ==> 'P'*[t],proof([
+theorem(eqssubst,eq*[eqt*[t,s],true] ==> 'P'*[s] ==> 'P'*[t],proof:[
   genR*i([(s,[])]),
   genR*i([(t,[])]),
   apply([forallR(r),forallR(t)]),
@@ -76,4 +76,4 @@ theorem(eqssubst,eq*[eqt*[t,s],true] ==> 'P'*[s] ==> 'P'*[t],proof([
   apply([forallR(s)]),
   use(eqsubst,['P':([x]=>'P'*[x])]),
   apply([i])
-])).
+]).

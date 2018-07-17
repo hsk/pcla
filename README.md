@@ -72,7 +72,7 @@ claire
                   | inst(ident,predicate)
                   | noApply(rule)
                   | ident*argument.
-    decl        ::= theorem(thmIndex,formula,proof([command]))
+    decl        ::= theorem(thmIndex,formula,proof:[command])
                   | axiom(thmIndex,formula)
                   | import(atom)
                   | printProof
@@ -363,15 +363,15 @@ Prologは `=../2` を使って複合項を分離できるので分離して`or`,
                                   R=(G,[[Assm_|Assms]⊦Props|J_])
                                 },Err,{R=comError(inst, cannotInstantiate(Err),J)}).
     com(inst(_,_)    ,_,J,R) :- !,R=comError(inst,'empty judgement',J).
-    com(com(defer,[]),G,J,R) :- !,J=[J1|J_],append(J_,[J1],J_2),R=(G,J_2).
-    com(com(Com,Args),G,J,R) :- member(Com=Cmd,G.coms),
+    com(defer*[]     ,G,J,R) :- !,J=[J1|J_],append(J_,[J1],J_2),R=(G,J_2).
+    com(Com*Args     ,G,J,R) :- member(Com=Cmd,G.coms),
                                 !,catch({
                                   call(Cmd,G,Args,J,Cs),!,comRun((G,J),Cs,J_),!,R=(G,J_)
                                 },E,{
                                   E=comError(_,Err,_)->R=comError(Com,Err,J);
                                   true               ->R=comError(Com,E,J)
                                 }).
-    com(com(Com,_)   ,_,J,R) :- R=comError(Com, noSuchCom(Com),J).
+    com(Com*_        ,_,J,R) :- R=comError(Com, noSuchCom(Com),J).
 
 コマンドは規則を実行するapply,規則が動くことを確認するnoApply、定理を使って判断を増やすuse、判断のトップの置換をするinst、ユーザー定義コマンドを実行するcomがあります。ユーザー定義の組み込みコマンドにはdeferコマンドがありこれは最初の判断を最後に移動します。
 
@@ -392,7 +392,7 @@ Prologは `=../2` を使って複合項を分離できるので分離して`or`,
     decl(axiom(Idx,F),    G,R) :- !,catch({
                                     infer(G,F),!,insertThm(Idx,F,G,R)
                                   },Err,{R=error(axiom,typeError(F,Err))}).
-    decl(theorem(Idx,F,P),G,R) :- !,catch({ P=proof(Cs),
+    decl(theorem(Idx,F,P),G,R) :- !,catch({ P=proof:Cs,
                                     infer(G,F),!,G_=G.put(proof,[]),!,
                                     proofRun((G_,[[]⊦[F]]),Cs,insertThm(Idx,F),R)
                                   },Err,{R=error(theorem,typeError(F,Err))}).
@@ -404,7 +404,7 @@ Prologは `=../2` を使って複合項を分離できるので分離して`or`,
                                   },_,{R=error(plFile, plFileLoadError(N))}).
     decl(Dec*Arg,G,R) :- member(Dec=Fun,G.decls),!,
                                   call(Fun,Arg,Ds),declRun(G,Ds,R).
-    decl(D\ec*_,  _,R) :- !,R=error(Dec,noSuchDecl(Dec)).
+    decl(Dec*_,  _,R) :- !,R=error(Dec,noSuchDecl(Dec)).
 
 
 importは他のclファイルを読み込みます。
