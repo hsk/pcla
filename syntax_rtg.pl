@@ -52,7 +52,7 @@ command     ::= apply([rule])
               | use(thmIndex,pairs)
               | inst(ident,predicate)
               | noApply(rule)
-              | com(ident,argument).
+              | ident*argument.
 decl        ::= theorem(thmIndex,formula,proof([command]))
               | axiom(thmIndex,formula)
               | import(atom)

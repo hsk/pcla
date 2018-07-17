@@ -19,32 +19,32 @@ assumption(_,[],[(Assms⊦Props)|Js],_) :- throw(cannotSolve([(Assms⊦Props)|Js
 assumption(_,_,_,_) :- throw(wrongArgument([])).
 implyR(Env,i([(I,Ps)]),Js,[use(I, Ps)| Cs1]) :- implyR(Env,[],Js,Cs1).
 implyR(_,[],_,
-    [ apply([impL]),com(defer, []),com(assumption, []),apply([pR(1), wR])]) :- !.
+    [ apply([impL]),defer*[],assumption*[],apply([pR(1), wR])]) :- !.
 implyR(_,Arg,_,_) :- throw(wrongArgument(Arg)).
 implyL(Env,i([(I,Ps)]),Js,[use(I,Ps)|Cs]) :- implyL(Env,[],Js,Cs).
-implyL(_,[],_,[apply([impL]),com(assumption,[]),apply([pL(1),wL])]).
+implyL(_,[],_,[apply([impL]),assumption*[],apply([pL(1),wL])]).
 implyL(_,Arg,_,_) :- throw(wrongArgument(Arg)).
 genR(_,i([(I,[])]),[_ ⊦ [P|_] |_],[
   apply([cut(forall(I, P))]),
-  com(defer, []),
+  defer*[],
   apply([forallL(I)]),
-  com(assumption, []),
+  assumption*[],
   apply([pR(1), wR])
 ]) :- !.
 genR(_,Arg,Js,_) :- throw(wrongArgument(Arg,Js)).
 genL(_,i([(I,[])]),[[P|Ps] ⊦ _ |_],[
   apply([cut(forall(I, P))]),
   apply([forallR(I)]),
-  com(assumption, []),
+  assumption*[],
   apply([pL(PLen), wL])
 ]) :- length(Ps,PLen).
 genL(_,Arg,_,_) :- throw(wrongArgument(Arg)).
 absL(_,[],[[A|_] ⊦ [B|_]|_],[
   apply([cut(A==>B)]),
-  com(defer, []),
+  defer*[],
   apply([impL]),
-  com(assumption, []),
-  com(assumption, []),
+  assumption*[],
+  assumption*[],
   apply([pR(1),wR, wL])
 ]).
 absL(_,Arg,Js,_) :- throw(wrongArgument(Arg,Js)).

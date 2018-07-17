@@ -53,26 +53,26 @@ axiom('True_or_False', eq*[or*[eqt*['P',true],eqt*['P',false]], true]).
 
 theorem(eqsym,eq*[eqt*[s,t],true] ==> eq*[eqt*[t,s],true],proof([
   apply([impR]),
-  com(implyL,i([(eqsubst,['P':([x]=>eq*[eqt*[x,s],true])])])),
-  com(implyR,[]),
+  implyL*i([(eqsubst,['P':([x]=>eq*[eqt*[x,s],true])])]),
+  implyR*[],
   use(eqrefl,[]),
-  com(genR,i([(s,[])])),
+  genR*i([(s,[])]),
   apply([forallR(t)]),
   apply([i])
 ])).
 
 theorem(eqssubst,eq*[eqt*[t,s],true] ==> 'P'*[s] ==> 'P'*[t],proof([
-  com(genR,i([(s,[])])),
-  com(genR,i([(t,[])])),
+  genR*i([(s,[])]),
+  genR*i([(t,[])]),
   apply([forallR(r),forallR(t)]),
-  com(genR,i([(r,[])])),
+  genR*i([(r,[])]),
   apply([forallR(s),impR]),
-  com(implyL,i([(eqsym,[])])),
-  com(absL,[]),
-  com(genR,i([(s,[])])),
-  com(genR,i([(t,[])])),
+  implyL*i([(eqsym,[])]),
+  absL*[],
+  genR*i([(s,[])]),
+  genR*i([(t,[])]),
   apply([forallR(r),forallR(t)]),
-  com(genR,i([(r,[])])),
+  genR*i([(r,[])]),
   apply([forallR(s)]),
   use(eqsubst,['P':([x]=>'P'*[x])]),
   apply([i])

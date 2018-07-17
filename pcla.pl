@@ -88,15 +88,15 @@ com(inst(I,Pred), G,J,R) :- J=[[Assm|Assms]⊦Props|J_],
                               R=(G,[[Assm_|Assms]⊦Props|J_])
                             },Err,{R=comError(inst, cannotInstantiate(Err),J)}).
 com(inst(_,_)    ,_,J,R) :- !,R=comError(inst,'empty judgement',J).
-com(com(defer,[]),G,J,R) :- !,J=[J1|J_],append(J_,[J1],J_2),R=(G,J_2).
-com(com(Com,Args),G,J,R) :- member(Com=Cmd,G.coms),
+com(defer*[],G,J,R) :- !,J=[J1|J_],append(J_,[J1],J_2),R=(G,J_2).
+com(Com*Args,G,J,R) :- member(Com=Cmd,G.coms),
                             !,catch({
                               call(Cmd,G,Args,J,Cs),!,comRun((G,J),Cs,J_),!,R=(G,J_)
                             },E,{
                               E=comError(_,Err,_)->R=comError(Com,Err,J);
                               true               ->R=comError(Com,E,J)
                             }).
-com(com(Com,_)   ,_,J,R) :- R=comError(Com, noSuchCom(Com),J).
+com(Com*_   ,_,J,R) :- R=comError(Com, noSuchCom(Com),J).
 
 % decl
 declRun(G,     [],G) :- is_dict(G).

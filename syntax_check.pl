@@ -52,7 +52,7 @@ command(apply(Rs)) :- maplist(rule,Rs).
 command(use(I,IPs)) :- thmIndex(I),pairs(IPs).
 command(inst(I,P)) :- ident(I),predicate(P).
 command(noApply(R)) :- rule(R).
-command(com(I,A)) :- ident(I),argument(A).
+command(I*A) :- ident(I),argument(A).
 proof(proof(Cs)) :- maplist(command,Cs).
 decl(theorem(I,F,Pr)) :- thmIndex(I),formula(F),proof(Pr).
 decl(axiom(I,F)) :- thmIndex(I),formula(F).

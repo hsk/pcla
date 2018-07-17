@@ -83,7 +83,148 @@ claire
 
 ## ユーザーマニュアル
 
-- 命令の意味
+pclaは大まかにいうとFOLとLKとDeclsの3つの層に分かれています。
+FOLはλ項のterm、論理式formula、述語predicate、型typeからなる一階述語論理です。
+LKは証明に用いる規則ruleを含みます。
+Declsは上位の宣言で、定理theorem,公理axiom,インポートimport,証明印字printProof,定数constant,Prologファイル読み込みplFile,ユーザー定義宣言newDeclから成ります。
+定理には証明が必ず必要で、証明の中身はcommandリストです。
+コマンドには規則適用apply,定理使用use,述語のインスタンス化inst,規則確認noApply,ユーザー定義コマンド適用comがあります。
+
+### FOL
+
+#### term
+    term        ::= ident
+                  | [ident]->term
+                  | term*[term].
+
+#### formula
+
+    formula     ::= ident*[term]
+                  | top
+                  | bottom
+                  | and(formula,formula)
+                  | or(formula,formula)
+                  | formula==>formula
+                  | forall(ident,formula)
+                  | exist(ident,formula).
+
+#### predicate
+
+    predicate   ::= [ident]=>predicate
+                  | formula.
+
+#### type
+
+    typeForm(T) ::= prop
+                  | call(T)
+                  | ident*[typeForm(T)]
+                  | typeForm(T)->typeForm(T).
+    identT(T)   ::= ident.
+    type        ::= typeForm(identT).
+
+### LK
+
+    rule        ::= i | cut(formula)
+                  | andL1 | andL2 | andR
+                  | orL | orR1 | orR2
+                  | impL | impR | bottomL | topR
+                  | forallL(term) | forallR(ident)
+                  | existL(ident) | existR(term)
+                  | wL | wR | cL | cR
+                  | pL(integer) | pR(integer).
+
+#### i
+
+    rule(i,[A⊦A|J],J).
+
+「AならばA」はあたりまえだから判断から除去できる規則がandL1です。
+
+i は私ならば私である。といった判断を除去します。
+
+#### cut(formula)
+
+    rule(cut(F),[A⊦P|J],[A⊦[F|P],[F|A]⊦P|J]).
+
+cutは飛躍のある論理に新しい論理を追加して間をつなぎます。
+
+「AならばP」のとき、「AならばFかつP」かつ「FかつAならばP」という規則がcutです。
+
+#### andL1 | andL2 | andR
+
+    rule(andL1,[[and(F,_)|A]⊦P|J],[[F|A]⊦P|J]).
+    rule(andL2,[[and(_,F)|A]⊦P|J],[[F|A]⊦P|J]).
+    rule(andR,[A⊦[and(F1,F2)|P]|J],[A⊦[F1|P],A⊦[F2|P]|J]).
+
+andL1は仮定内のandの左側のみを取り出し、andL2はandの右側を取り出します。
+andRは結論のandを2つの判断に分割します。
+
+「AかつBならばC」ならば、「AならばC」という規則がandL1です。
+「AかつBならばC」ならば、「BならばC」という規則がandL2です。
+「AならばBかつC」ならば、「AならばBかつAならばC」という規則がandL2です。
+
+#### orL | orR1 | orR2
+
+トップのorの規則です。
+
+    rule(orL,[[or(F1,F2)|A]⊦P|J],[[F1|A]⊦P,[F2|A]⊦P|J]).
+    rule(orR1,[A⊦[or(F,_)|P]|J],[A⊦[F|P]|J]).
+    rule(orR2,[A⊦[or(_,F)|P]|J],[A⊦[F|P]|J]).
+
+「F1またはF2、ならばP」ならば、「F1ならばP、かつF2ならばP」という規則がorLです。
+「Aならば、BまたはC」ならば、「AならばB」という規則がorR1です。
+「Aならば、BまたはC」ならば、「AならばC」という規則がorR2です。
+
+#### impL | impR | bottomL | topR
+
+    rule(impL,[[F1==>F2|A]⊦P|J],[A⊦[F1|P],[F2|A]⊦P|J]).
+    rule(impR,[A⊦[F1==>F2|P]|J],[[F1|A]⊦[F2|P]|J]).
+    rule(bottomL,[[bottom|_]⊦_|J],J).
+    rule(topR,[_⊦[top|_]|J],J).
+
+impLはF1ならばF2かつAならばPならば、AならばF1かつPかつF2かつAならばPとします。
+impRはAならばF1ならばF2かつPならば、F1かつAならばF2かつPとします。
+bottomLはbottomを仮定から取り除きます。
+topRはtopを結論から取り除きます。
+
+#### forallL(term) | forallR(ident)
+
+    rule(forallL(T),[[forall(X,F)|A]⊦P|J],[[F_|A]⊦P|J]) :- substFormula(X,T,F,F_).
+    rule(forallR(Y),[A⊦[forall(X,F)|P]|J],[A⊦[F_|P]|J]) :- substFormula(X,Y,F,F_).
+
+forallL(T)は仮定のforall(X,F)のFをXからTに置き換えます。
+forallR(Y)は結論のforall(X,F)のFをXからYに置き換えます。
+
+#### existL(ident) | existR(term)
+
+    rule(existL(Y),[[exist(X,F)|A]⊦P|J],[[F_|A]⊦P|J]) :- substFormula(X,Y,F,F_).
+    rule(existR(T),[A⊦[exist(X,F)|P]|J],[A⊦[F_|P]|J]) :- substFormula(X,T,F,F_).
+
+existL(Y) は仮定のexist(X,F)のFをXからYに置き換えます。
+existR(T) は結論のexist(X,F)のFをXからTに置き換えます。
+
+#### wL | wR | cL | cR
+
+    rule(wL,[[_|A]⊦P|J],[A⊦P|J]).
+    rule(wR,[A⊦[_|P]|J],[A⊦P|J]).
+    rule(cL,[[F|A]⊦P|J],[[F,F|A]⊦P|J]).
+    rule(cR,[A⊦[F|P]|J],[A⊦[F,F|P]|J]).
+
+wLは一つ仮定を捨てます。弱化ですね。
+wRは結論を1つ捨てます。
+cLは仮定をコピーします。
+cRは結論を1つコピーします。
+
+wL,wRで全部消したら証明になるのかというとならないはずです。
+
+#### pL(integer) | pR(integer)
+
+    rule(pL(K),[A⊦P|J],[[Ak|K_]⊦P|J]) :- length(A,L),K<L,nth0(K,A,Ak,K_).
+    rule(pR(K),[A⊦P|J],[A⊦[Pk|P_]|J]) :- length(P,L),K<L,nth0(K,P,Pk,P_).
+
+pL(K)はK番目の仮定をいちばんうしろに移動します。
+pR(K)はK番目の結論をいちばんうしろに移動します。
+
+### Decls
 
 ## Prologの難しい機能
 
